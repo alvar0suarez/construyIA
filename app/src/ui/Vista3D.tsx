@@ -10,8 +10,9 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-import { PLANTAS, type PlantaId } from '../domain/types';
+import { CUBIERTA_DEFECTO, PLANTAS, type PlantaId } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
+import { llevaTejado } from '../engine/cubierta';
 import { dimensionesParcela, envolventeEdificable } from '../engine/geometria';
 import {
   diaDelAnyo,
@@ -24,7 +25,7 @@ import {
 } from '../engine/soleamiento';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { useStore } from '../state/store';
-import { murosDeEstancia } from './muros';
+import { ladosCubiertos, murosDeEstancia, tejadoDeEstancia } from './muros';
 
 const LAT_DEFECTO = 40.5;
 const LNG_DEFECTO = -3.7;
@@ -202,6 +203,10 @@ function Escena({
   const parcela = useStore((s) => s.proyecto.parcela);
   const plantas = useStore((s) => s.proyecto.plantas);
   const alturaPorPlanta = useStore((s) => s.proyecto.alturaPorPlanta);
+  // Selector sobre el campo crudo (con ?? a una constante estable) para no
+  // crear un objeto nuevo por render.
+  const cubiertaRaw = useStore((s) => s.proyecto.cubierta);
+  const cubierta = cubiertaRaw ?? CUBIERTA_DEFECTO;
 
   const dims = dimensionesParcela(parcela);
   const envolvente = envolventeEdificable(parcela, normativa);
@@ -237,12 +242,22 @@ function Escena({
   );
 
   const cuerpos = useMemo(() => {
-    return PLANTAS.flatMap((p) =>
-      (plantas[p.id] ?? []).map((e) => {
+    const sobre = PLANTAS.filter((p) => p.sobreRasante);
+    return PLANTAS.flatMap((p) => {
+      const enPlanta = plantas[p.id] ?? [];
+      const idxSobre = sobre.findIndex((sp) => sp.id === p.id);
+      const superior =
+        idxSobre >= 0 && idxSobre + 1 < sobre.length
+          ? plantas[sobre[idxSobre + 1].id as PlantaId] ?? []
+          : [];
+      return enPlanta.map((e, i) => {
         const def = tipoEstancia(e.tipo);
         const base = basePlanta(p.id);
         const esPlana = def.id === 'piscina' || def.id === 'terraza';
         const conMuros = !SIN_MUROS.has(def.id);
+        const vecinasAnteriores = enPlanta
+          .slice(0, i)
+          .filter((otra) => !SIN_MUROS.has(tipoEstancia(otra.tipo).id));
         return {
           e,
           def,
@@ -250,13 +265,22 @@ function Escena({
           esPlana,
           sobreRasante: p.sobreRasante,
           muros: conMuros && !esPlana
-            ? murosDeEstancia(e, base, alturaPorPlanta - 0.08)
+            ? murosDeEstancia(
+                e,
+                base,
+                alturaPorPlanta - 0.08,
+                ladosCubiertos(e, vecinasAnteriores),
+              )
             : null,
+          tejado:
+            p.sobreRasante && cubierta.tipo === 'inclinada' && llevaTejado(e, superior)
+              ? tejadoDeEstancia(e, base + alturaPorPlanta - 0.06, cubierta.pendiente)
+              : null,
         };
-      }),
-    );
+      });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plantas, alturaPorPlanta]);
+  }, [plantas, alturaPorPlanta, cubierta.tipo, cubierta.pendiente]);
 
   return (
     <>
@@ -316,7 +340,7 @@ function Escena({
           </lineSegments>
         )}
 
-        {cuerpos.map(({ e, def, base, esPlana, sobreRasante, muros }) => {
+        {cuerpos.map(({ e, def, base, esPlana, sobreRasante, muros, tejado }) => {
           if (esPlana) {
             return (
               <mesh key={e.id} position={[e.x + e.ancho / 2, base + 0.075, e.y + e.fondo / 2]} receiveShadow>
@@ -326,17 +350,19 @@ function Escena({
             );
           }
           if (!muros) {
-            // Porche: losa de suelo + techo fino sobre pilares implícitos
+            // Porche: losa de suelo; el techo plano solo si no lleva tejado
             return (
               <group key={e.id}>
                 <mesh position={[e.x + e.ancho / 2, base + 0.04, e.y + e.fondo / 2]} receiveShadow>
                   <boxGeometry args={[e.ancho, 0.08, e.fondo]} />
                   <meshStandardMaterial color={def.color} />
                 </mesh>
-                <mesh position={[e.x + e.ancho / 2, base + alturaPorPlanta - 0.1, e.y + e.fondo / 2]} castShadow>
-                  <boxGeometry args={[e.ancho, 0.12, e.fondo]} />
-                  <meshStandardMaterial color="#a1887f" />
-                </mesh>
+                {!tejado && (
+                  <mesh position={[e.x + e.ancho / 2, base + alturaPorPlanta - 0.1, e.y + e.fondo / 2]} castShadow>
+                    <boxGeometry args={[e.ancho, 0.12, e.fondo]} />
+                    <meshStandardMaterial color="#a1887f" />
+                  </mesh>
+                )}
               </group>
             );
           }
@@ -374,6 +400,22 @@ function Escena({
             </group>
           );
         })}
+
+        {/* Tejados a dos aguas */}
+        {cuerpos
+          .filter((c) => c.tejado)
+          .map(({ e, tejado }) => (
+            <mesh
+              key={`t${e.id}`}
+              geometry={tejado!.geometria}
+              position={tejado!.posicion}
+              rotation={[0, tejado!.rotacionY, 0]}
+              castShadow
+              receiveShadow
+            >
+              <meshStandardMaterial color="#a95f38" />
+            </mesh>
+          ))}
       </group>
     </>
   );

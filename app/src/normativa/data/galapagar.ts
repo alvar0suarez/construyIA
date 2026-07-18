@@ -37,6 +37,8 @@ export const galapagarU3: NormativaMunicipal = {
   ocupacionMaxima: 30,
   edificabilidadMaxima: 0.5,
   alturaMaxima: 6.5,
+  alturaMaximaCumbrera: 10.1,
+  pendienteCubierta: { min: 20, max: 45 },
   plantasMaximas: 2,
   notas:
     'RU3 admite tipología aislada o pareada (en pareado, retranqueo nulo al ' +
@@ -75,6 +77,8 @@ export const galapagarRU4: NormativaMunicipal = {
   ocupacionMaxima: 50,
   edificabilidadMaxima: 0.5,
   alturaMaxima: 6.6,
+  alturaMaximaCumbrera: 10.1,
+  pendienteCubierta: { min: 20, max: 45 },
   plantasMaximas: 2,
   notas:
     'RU4 admite pareada y agrupada (y aislada si la forma de la parcela lo ' +

@@ -48,7 +48,14 @@ export function PanelCumplimiento({
             <tr><td>Ocupación</td><td>{f(m.areaOcupada, 0)} m² ({f(m.ocupacionPct)} %)</td></tr>
             <tr><td>Sup. computable</td><td>{f(m.superficieComputable, 0)} m²</td></tr>
             <tr><td>Edificabilidad</td><td>{f(m.edificabilidad, 2)} / {f(normativa.edificabilidadMaxima, 2)} m²/m²</td></tr>
-            <tr><td>Altura</td><td>{f(m.alturaEdificacion)} / {f(normativa.alturaMaxima)} m</td></tr>
+            <tr><td>Altura cornisa</td><td>{f(m.alturaEdificacion)} / {f(normativa.alturaMaxima)} m</td></tr>
+            <tr>
+              <td>Altura cumbrera</td>
+              <td>
+                {f(m.alturaCumbrera)}
+                {normativa.alturaMaximaCumbrera != null && ` / ${f(normativa.alturaMaximaCumbrera)}`} m
+              </td>
+            </tr>
             <tr><td>Sup. útil aprox.</td><td>{f(m.superficieUtilAprox, 0)} m²</td></tr>
             <tr><td>Dormitorios / baños</td><td>{m.numDormitorios} / {m.numBanyos}</td></tr>
           </tbody>

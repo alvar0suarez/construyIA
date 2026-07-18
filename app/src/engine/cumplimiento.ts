@@ -154,6 +154,49 @@ export function evaluar(
     });
   }
 
+  // --- Cubierta ---
+  if (m.plantasSobreRasante > 0) {
+    const cubierta = proyecto.cubierta ?? { tipo: 'inclinada' as const, pendiente: 30 };
+    if (normativa.pendienteCubierta) {
+      const { min, max } = normativa.pendienteCubierta;
+      if (cubierta.tipo === 'plana') {
+        reglas.push({
+          regla: 'cubierta',
+          nivel: 'error',
+          mensaje: `La ordenanza exige cubierta inclinada (${min}–${max}°) y el proyecto tiene cubierta plana.`,
+        });
+      } else if (cubierta.pendiente < min - 1e-6 || cubierta.pendiente > max + 1e-6) {
+        reglas.push({
+          regla: 'cubierta',
+          nivel: 'error',
+          mensaje: `Pendiente de cubierta fuera del rango permitido.`,
+          valor: `${f(cubierta.pendiente, 0)}°`,
+          limite: `${min}–${max}°`,
+        });
+      } else {
+        reglas.push({
+          regla: 'cubierta',
+          nivel: 'ok',
+          mensaje: 'Pendiente de cubierta dentro del rango.',
+          valor: `${f(cubierta.pendiente, 0)}°`,
+          limite: `${min}–${max}°`,
+        });
+      }
+    }
+    if (normativa.alturaMaximaCumbrera != null) {
+      const okCumbrera = m.alturaCumbrera <= normativa.alturaMaximaCumbrera + 1e-6;
+      reglas.push({
+        regla: 'cumbrera',
+        nivel: okCumbrera ? 'ok' : 'error',
+        mensaje: okCumbrera
+          ? 'Altura de cumbrera dentro del máximo.'
+          : 'El tejado supera la altura máxima de cumbrera.',
+        valor: `${f(m.alturaCumbrera)} m`,
+        limite: `≤ ${f(normativa.alturaMaximaCumbrera)} m`,
+      });
+    }
+  }
+
   // --- Recomendaciones de diseño (no normativas) ---
   const todas = Object.values(proyecto.plantas).flat();
   for (const e of todas) {

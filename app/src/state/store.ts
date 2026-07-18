@@ -25,6 +25,7 @@ function proyectoNuevo(): Proyecto {
     parcela: { norte: 25, sur: 25, este: 32, oeste: 32, frente: 'sur' },
     plantas: { sotano: [], baja: [], primera: [] },
     alturaPorPlanta: 3,
+    cubierta: { tipo: 'inclinada', pendiente: 30 },
   };
 }
 
@@ -53,6 +54,7 @@ interface AppState {
   /** Vuelve a los valores de la fuente para la normativa seleccionada. */
   resetAjustesNormativa: () => void;
   setAlturaPorPlanta: (h: number) => void;
+  setCubierta: (c: Proyecto['cubierta']) => void;
   setPlantaActiva: (p: PlantaId) => void;
   setSeleccion: (id: string | null) => void;
   setSeleccionHueco: (id: string | null) => void;
@@ -154,6 +156,9 @@ export const useStore = create<AppState>()(
 
       setAlturaPorPlanta: (alturaPorPlanta) =>
         set((s) => ({ proyecto: { ...s.proyecto, alturaPorPlanta } })),
+
+      setCubierta: (cubierta) =>
+        set((s) => ({ proyecto: { ...s.proyecto, cubierta } })),
 
       setPlantaActiva: (plantaActiva) =>
         set({ plantaActiva, seleccionId: null, seleccionHuecoId: null }),

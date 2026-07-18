@@ -51,8 +51,12 @@ de ser fácil.
       con < 10 % de superficie acristalada, salón con ventanas solo al
       norte, exceso de vidrio al oeste (sobrecalentamiento).
 - [x] Deshacer/rehacer (Ctrl+Z / Ctrl+Y, historial de 50 pasos).
-- [ ] Muros con grosor real compartidos entre estancias (adyacencias para
-      las recomendaciones de distribución de la app original).
+- [x] Fusión de muros compartidos en 3D (el muro duplicado se omite cuando
+      la vecina cubre todo el tramo y no hay huecos en él).
+- [x] **Cubiertas inclinadas**: tipo y pendiente de cubierta en el proyecto,
+      tejados a dos aguas en 3D (solo sobre estancias no cubiertas por la
+      planta superior), altura de cumbrera en métricas y validación de
+      pendiente (20–45°) y cumbrera (≤10,1 m) contra la ordenanza.
 - [ ] Duplicar estancia, alinear y distribuir.
 - [x] Joystick virtual y controles táctiles para la vista interior en móvil.
 - [x] Parámetros de cualquier normativa editables por el usuario (ajustes

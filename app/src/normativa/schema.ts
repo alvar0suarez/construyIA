@@ -43,8 +43,15 @@ export interface NormativaMunicipal {
   ocupacionMaxima: number;
   /** m² construibles por m² de parcela. */
   edificabilidadMaxima: number;
-  /** Altura máxima de la edificación en metros. */
+  /** Altura máxima de la edificación (a cornisa) en metros. */
   alturaMaxima: number;
+  /** Altura máxima a cumbrera en metros, si la ordenanza la fija. */
+  alturaMaximaCumbrera?: number;
+  /**
+   * Rango de pendiente de cubierta exigido (grados). Su presencia implica
+   * que la ordenanza exige cubierta inclinada.
+   */
+  pendienteCubierta?: { min: number; max: number };
   /** Nº máximo de plantas sobre rasante. */
   plantasMaximas: number;
   /** Retranqueo mínimo de la piscina a todos los linderos, en metros. */
