@@ -55,6 +55,12 @@ label { font-size: 12px; color: var(--tinta-suave); display: block; }
 .fila { margin-top: 8px; }
 .grid-normativa { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .verificacion { font-size: 12px; margin: 6px 0; }
+.aviso-ajustes {
+  font-size: 11px; background: #fdf6e8; border: 1px solid #ecd9b0;
+  border-radius: 6px; padding: 6px 8px; margin: 6px 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.aviso-ajustes button { font-size: 11px; padding: 2px 6px; }
 .parametros, .fuentes { font-size: 12px; padding-left: 16px; margin: 6px 0; }
 .notas { font-size: 11px; color: var(--tinta-suave); }
 details summary { cursor: pointer; font-size: 12px; color: var(--acento); }

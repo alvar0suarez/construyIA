@@ -12,7 +12,29 @@ const ETIQUETA: Record<NormativaMunicipal['verificacion'], { texto: string; clas
 const REPO_URL = 'https://github.com/alvar0suarez/construyIA';
 
 export function Cobertura() {
-  const contrastadas = NORMATIVAS.filter((n) => n.verificacion === 'contrastada').length;
+  const municipios = [...new Set(NORMATIVAS.map((n) => n.municipio))];
+  const contrastadas = new Set(
+    NORMATIVAS.filter((n) => n.verificacion === 'contrastada').map((n) => n.municipio),
+  ).size;
+  // Un punto por municipio en el mapa (verde si alguna de sus normativas
+  // está contrastada), aunque tenga varias zonas/grados cargados.
+  const puntos = municipios
+    .map((m) => {
+      const deEste = NORMATIVAS.filter((n) => n.municipio === m && n.ubicacion);
+      if (deEste.length === 0) return null;
+      return {
+        municipio: m,
+        ubicacion: deEste[0].ubicacion!,
+        contrastada: deEste.some((n) => n.verificacion === 'contrastada'),
+        zonas: NORMATIVAS.filter((n) => n.municipio === m).length,
+      };
+    })
+    .filter(Boolean) as {
+    municipio: string;
+    ubicacion: { lat: number; lng: number };
+    contrastada: boolean;
+    zonas: number;
+  }[];
 
   return (
     <div className="cobertura">
@@ -26,8 +48,8 @@ export function Cobertura() {
         </p>
         <div className="cobertura-stats">
           <div className="stat">
-            <div className="stat-num">{NORMATIVAS.length}</div>
-            <div className="stat-label">municipios cargados</div>
+            <div className="stat-num">{municipios.length}</div>
+            <div className="stat-label">municipios cargados ({NORMATIVAS.length} zonas/grados)</div>
           </div>
           <div className="stat">
             <div className="stat-num">{contrastadas}</div>
@@ -47,24 +69,23 @@ export function Cobertura() {
               <title>{p.n}</title>
             </path>
           ))}
-          {NORMATIVAS.filter((n) => n.ubicacion).map((n, i) => {
-            const pt = proyectar(n.ubicacion!.lat, n.ubicacion!.lng);
-            const verde = n.verificacion === 'contrastada';
+          {puntos.map((p, i) => {
+            const pt = proyectar(p.ubicacion.lat, p.ubicacion.lng);
             // Alterna la posición de la etiqueta para que municipios
             // cercanos no se pisen entre sí.
             const dy = i % 2 === 0 ? -12 : 22;
             return (
-              <g key={n.id}>
+              <g key={p.municipio}>
                 <circle
                   cx={pt.x}
                   cy={pt.y}
                   r={7}
-                  className={verde ? 'mapa-punto ok' : 'mapa-punto aviso'}
+                  className={p.contrastada ? 'mapa-punto ok' : 'mapa-punto aviso'}
                 >
-                  <title>{`${n.municipio} — ${ETIQUETA[n.verificacion].texto}`}</title>
+                  <title>{`${p.municipio} — ${p.zonas} zona(s)/grado(s)`}</title>
                 </circle>
                 <text x={pt.x + 10} y={pt.y + dy} className="mapa-etiqueta">
-                  {n.municipio}
+                  {p.municipio}
                 </text>
               </g>
             );

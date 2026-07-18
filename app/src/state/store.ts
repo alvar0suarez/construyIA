@@ -9,7 +9,11 @@ import type {
   Rect,
 } from '../domain/types';
 import type { NormativaMunicipal } from '../normativa/schema';
-import { getNormativa, plantillaPersonalizada } from '../normativa/registry';
+import {
+  getNormativa,
+  plantillaPersonalizada,
+  type AjustesNormativa,
+} from '../normativa/registry';
 import { tipoEstancia } from '../engine/catalogo';
 import { dimensionesParcela } from '../engine/geometria';
 
@@ -44,6 +48,10 @@ interface AppState {
   setParcela: (parcial: Partial<Parcela>) => void;
   setNormativaId: (id: string) => void;
   setPersonalizada: (parcial: Partial<NormativaMunicipal>) => void;
+  /** Sobrescribe parámetros de la normativa predefinida seleccionada. */
+  setAjusteNormativa: (parcial: AjustesNormativa) => void;
+  /** Vuelve a los valores de la fuente para la normativa seleccionada. */
+  resetAjustesNormativa: () => void;
   setAlturaPorPlanta: (h: number) => void;
   setPlantaActiva: (p: PlantaId) => void;
   setSeleccion: (id: string | null) => void;
@@ -91,8 +99,14 @@ export const useStore = create<AppState>()(
       pasado: [],
       futuro: [],
 
-      normativaActiva: () =>
-        getNormativa(get().proyecto.normativaId, get().normativaPersonalizada),
+      normativaActiva: () => {
+        const p = get().proyecto;
+        return getNormativa(
+          p.normativaId,
+          get().normativaPersonalizada,
+          p.ajustesNormativa?.[p.normativaId] as AjustesNormativa | undefined,
+        );
+      },
 
       setNombre: (nombre) =>
         set((s) => ({ proyecto: { ...s.proyecto, nombre } })),
@@ -111,6 +125,32 @@ export const useStore = create<AppState>()(
         set((s) => ({
           normativaPersonalizada: { ...s.normativaPersonalizada, ...parcial },
         })),
+
+      setAjusteNormativa: (parcial) =>
+        set((s) => {
+          const id = s.proyecto.normativaId;
+          const previos = (s.proyecto.ajustesNormativa?.[id] ?? {}) as AjustesNormativa;
+          const nuevos: AjustesNormativa = {
+            ...previos,
+            ...parcial,
+            ...(parcial.retranqueos
+              ? { retranqueos: { ...previos.retranqueos, ...parcial.retranqueos } as AjustesNormativa['retranqueos'] }
+              : {}),
+          };
+          return {
+            proyecto: {
+              ...s.proyecto,
+              ajustesNormativa: { ...s.proyecto.ajustesNormativa, [id]: nuevos },
+            },
+          };
+        }),
+
+      resetAjustesNormativa: () =>
+        set((s) => {
+          const ajustes = { ...s.proyecto.ajustesNormativa };
+          delete ajustes[s.proyecto.normativaId];
+          return { proyecto: { ...s.proyecto, ajustesNormativa: ajustes } };
+        }),
 
       setAlturaPorPlanta: (alturaPorPlanta) =>
         set((s) => ({ proyecto: { ...s.proyecto, alturaPorPlanta } })),

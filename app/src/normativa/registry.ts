@@ -1,5 +1,5 @@
 import type { NormativaMunicipal } from './schema';
-import { galapagarU3 } from './data/galapagar';
+import { galapagarRU4, galapagarU3 } from './data/galapagar';
 import { lasRozasNZ3 } from './data/lasRozas';
 
 export const PERSONALIZADA_ID = 'personalizada';
@@ -19,12 +19,47 @@ export const plantillaPersonalizada: NormativaMunicipal = {
   plantasMaximas: 2,
 };
 
-export const NORMATIVAS: NormativaMunicipal[] = [galapagarU3, lasRozasNZ3];
+export const NORMATIVAS: NormativaMunicipal[] = [galapagarU3, galapagarRU4, lasRozasNZ3];
+
+/** Parámetros numéricos que el usuario puede sobrescribir sobre cualquier normativa. */
+export type AjustesNormativa = Partial<
+  Pick<
+    NormativaMunicipal,
+    | 'retranqueos'
+    | 'ocupacionMaxima'
+    | 'edificabilidadMaxima'
+    | 'alturaMaxima'
+    | 'plantasMaximas'
+    | 'parcelaMinima'
+    | 'retranqueoPiscina'
+  >
+>;
+
+/**
+ * Aplica los ajustes del usuario sobre una normativa base. El resultado se
+ * marca como `personalizada` para que la UI y las validaciones dejen claro
+ * que ya no son los valores de la fuente.
+ */
+export function aplicarAjustes(
+  base: NormativaMunicipal,
+  ajustes: AjustesNormativa | undefined,
+): NormativaMunicipal {
+  if (!ajustes || Object.keys(ajustes).length === 0) return base;
+  return {
+    ...base,
+    ...ajustes,
+    retranqueos: { ...base.retranqueos, ...ajustes.retranqueos },
+    verificacion: 'personalizada',
+    zona: `${base.zona} (con ajustes tuyos)`,
+  };
+}
 
 export function getNormativa(
   id: string,
   personalizada: NormativaMunicipal,
+  ajustes?: AjustesNormativa,
 ): NormativaMunicipal {
   if (id === PERSONALIZADA_ID) return personalizada;
-  return NORMATIVAS.find((n) => n.id === id) ?? galapagarU3;
+  const base = NORMATIVAS.find((n) => n.id === id) ?? galapagarU3;
+  return aplicarAjustes(base, ajustes);
 }

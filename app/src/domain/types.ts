@@ -54,6 +54,12 @@ export interface Proyecto {
   schemaVersion: 1;
   nombre: string;
   normativaId: string;
+  /**
+   * Sobrescrituras del usuario sobre la normativa seleccionada (por id de
+   * normativa, para conservarlas al cambiar de una a otra). Estructura
+   * definida en normativa/registry.ts (AjustesNormativa).
+   */
+  ajustesNormativa?: Record<string, unknown>;
   parcela: Parcela;
   plantas: Record<PlantaId, Estancia[]>;
   /** Altura libre + forjado por planta sobre rasante, en metros. */

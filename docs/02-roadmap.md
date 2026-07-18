@@ -54,7 +54,14 @@ de ser fácil.
 - [ ] Muros con grosor real compartidos entre estancias (adyacencias para
       las recomendaciones de distribución de la app original).
 - [ ] Duplicar estancia, alinear y distribuir.
-- [ ] Joystick virtual y controles táctiles para la vista interior en móvil.
+- [x] Joystick virtual y controles táctiles para la vista interior en móvil.
+- [x] Parámetros de cualquier normativa editables por el usuario (ajustes
+      con aviso «modificada por ti» y restaurar a la fuente).
+- [x] Galapagar por grados: RU3 (La Navata) y RU4.
+- [x] Rendimiento del arrastre en móvil: coalescencia de eventos con
+      requestAnimationFrame y evaluación de cumplimiento diferida.
+- [ ] UX móvil específica: paneles plegables, botones más grandes y gestos
+      (pellizcar para zoom en el plano).
 
 ## F1 — Multi-municipio + IA
 

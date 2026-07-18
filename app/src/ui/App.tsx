@@ -1,6 +1,6 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { evaluar } from '../engine/cumplimiento';
-import { getNormativa } from '../normativa/registry';
+import { getNormativa, type AjustesNormativa } from '../normativa/registry';
 import { useStore } from '../state/store';
 import { Cabecera } from './Cabecera';
 import { Cobertura } from './Cobertura';
@@ -17,7 +17,11 @@ export type Pagina = 'diseno' | 'cobertura';
 export function App() {
   const proyecto = useStore((s) => s.proyecto);
   const personalizada = useStore((s) => s.normativaPersonalizada);
-  const normativa = getNormativa(proyecto.normativaId, personalizada);
+  const normativa = getNormativa(
+    proyecto.normativaId,
+    personalizada,
+    proyecto.ajustesNormativa?.[proyecto.normativaId] as AjustesNormativa | undefined,
+  );
 
   const [pagina, setPagina] = useState<Pagina>('diseno');
   const [vista, setVista] = useState<'plano' | '3d'>('plano');
@@ -38,7 +42,15 @@ export function App() {
     return () => window.removeEventListener('keydown', onTecla);
   }, []);
 
-  const evaluacion = evaluar(proyecto, normativa);
+  // La evaluación se difiere para que el arrastre de estancias siga fluido
+  // en dispositivos lentos: el plano responde al momento y el panel de
+  // cumplimiento se actualiza un instante después.
+  const proyectoDiferido = useDeferredValue(proyecto);
+  const normativaDiferida = useDeferredValue(normativa);
+  const evaluacion = useMemo(
+    () => evaluar(proyectoDiferido, normativaDiferida),
+    [proyectoDiferido, normativaDiferida],
+  );
 
   return (
     <div className="app">
