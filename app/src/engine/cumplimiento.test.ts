@@ -90,13 +90,13 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     expect(ev.normativa.find((r) => r.regla === 'ocupacion')!.nivel).toBe('error');
   });
 
-  it('edificabilidad: el sótano no computa y el porche computa al 50 %', () => {
+  it('edificabilidad: el sótano no computa y el porche computa al 60 %', () => {
     const p = proyectoBase();
     p.plantas.sotano.push({ id: 's', tipo: 'garaje', x: 5, y: 5, ancho: 10, fondo: 10 }); // 100 m² → 0
     p.plantas.baja.push({ id: 'b', tipo: 'salon', x: 5, y: 5, ancho: 10, fondo: 10 }); // 100 m²
-    p.plantas.baja.push({ id: 'p', tipo: 'porche', x: 5, y: 15, ancho: 4, fondo: 5 }); // 20 m² → 10
+    p.plantas.baja.push({ id: 'p', tipo: 'porche', x: 5, y: 15, ancho: 4, fondo: 5 }); // 20 m² → 12
     const ev = evaluar(p, galapagarU3);
-    expect(ev.metricas.superficieComputable).toBeCloseTo(110);
+    expect(ev.metricas.superficieComputable).toBeCloseTo(112);
     expect(ev.normativa.find((r) => r.regla === 'edificabilidad')!.nivel).toBe('ok');
   });
 

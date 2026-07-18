@@ -34,7 +34,10 @@ export const CATALOGO: TipoEstanciaDef[] = [
   { id: 'escalera', nombre: 'Escalera', icono: '🪜', color: '#cbb8a0', defaultW: 1.2, defaultD: 3, computaEdif: 1, computaOcup: true, esEscalera: true },
   { id: 'garaje', nombre: 'Garaje', icono: '🚗', color: '#b8c4cc', minArea: 15, defaultW: 3.5, defaultD: 5.5, computaEdif: 1, computaOcup: true, esGaraje: true },
   { id: 'trastero', nombre: 'Trastero / lavadero', icono: '📦', color: '#d8cfc4', defaultW: 2, defaultD: 2, computaEdif: 1, computaOcup: true },
-  { id: 'porche', nombre: 'Porche abierto', icono: '⛱', color: '#c8e6c9', defaultW: 3, defaultD: 3, computaEdif: 0.5, computaOcup: true },
+  // Porche: el Avance del PGOU de Galapagar computa al 60 % los espacios
+  // cubiertos cerrados por 1-2 lados (100 % con 3+). En F1 este coeficiente
+  // pasará a ser configurable por normativa.
+  { id: 'porche', nombre: 'Porche abierto', icono: '⛱', color: '#c8e6c9', defaultW: 3, defaultD: 3, computaEdif: 0.6, computaOcup: true },
   { id: 'terraza', nombre: 'Terraza descubierta', icono: '🌤', color: '#ffe0b2', minArea: 9, defaultW: 3, defaultD: 3, computaEdif: 0, computaOcup: false },
   { id: 'piscina', nombre: 'Piscina', icono: '🏊', color: '#81d4fa', defaultW: 4, defaultD: 8, computaEdif: 0, computaOcup: false },
 ];
