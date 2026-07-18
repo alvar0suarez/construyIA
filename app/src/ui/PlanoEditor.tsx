@@ -28,9 +28,10 @@ const ESTILOS_EXPORT = `
   .svg-fantasma { fill: none; stroke: #b9b4aa; stroke-width: 0.06; stroke-dasharray: 0.2 0.2; }
   .svg-estancia { stroke: #565045; stroke-width: 0.06; opacity: 0.94; }
   .svg-estancia.seleccionada { stroke: #565045; stroke-width: 0.06; }
-  .svg-etiqueta { font-size: 0.55px; text-anchor: middle; fill: #2f2c25; }
-  .svg-etiqueta-area { font-size: 0.5px; fill: #68705f; }
-  .svg-asa { display: none; }
+  .svg-etiqueta { font-size: 0.5px; text-anchor: middle; fill: #2f2c25; font-weight: 600; }
+  .svg-etiqueta-area { font-size: 0.42px; fill: #7a7568; font-weight: 400; }
+  .svg-medida { font-size: 0.44px; fill: #4a7c65; text-anchor: middle; }
+  .svg-asa, .svg-borrar-fondo, .svg-borrar-x { display: none; }
   .svg-guia { display: none; }
   .svg-hueco.ventana { stroke: #1e88e5; stroke-width: 0.18; }
   .svg-hueco.puerta { stroke: #8d6e63; stroke-width: 0.2; }
@@ -423,32 +424,64 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
                   setArrastre({ modo: 'mover', id: e.id, dx: p.x - e.x, dy: p.y - e.y });
                 }}
               />
-              <text
-                x={e.x + e.ancho / 2}
-                y={e.y + e.fondo / 2 - 0.25}
-                className="svg-etiqueta"
-              >
-                {def.icono} {def.nombre}
+              {/* Etiqueta central: nombre (+ área si la estancia es grande) */}
+              {Math.min(e.ancho, e.fondo) > 1.4 && (
+                <text
+                  x={e.x + e.ancho / 2}
+                  y={e.y + e.fondo / 2 + 0.15}
+                  className="svg-etiqueta"
+                >
+                  {def.nombre}
+                </text>
+              )}
+              {e.ancho * e.fondo >= 6 && (
+                <text
+                  x={e.x + e.ancho / 2}
+                  y={e.y + e.fondo / 2 + 0.75}
+                  className="svg-etiqueta svg-etiqueta-area"
+                >
+                  {(e.ancho * e.fondo).toFixed(1)} m²
+                </text>
+              )}
+              {/* Medidas de los lados: ancho arriba, fondo a la izquierda */}
+              <text x={e.x + e.ancho / 2} y={e.y + 0.5} className="svg-medida">
+                {e.ancho.toFixed(1)}
               </text>
               <text
-                x={e.x + e.ancho / 2}
-                y={e.y + e.fondo / 2 + 0.55}
-                className="svg-etiqueta svg-etiqueta-area"
+                x={e.x + 0.5}
+                y={e.y + e.fondo / 2}
+                className="svg-medida"
+                transform={`rotate(-90 ${e.x + 0.5} ${e.y + e.fondo / 2})`}
               >
-                {(e.ancho * e.fondo).toFixed(1)} m²
+                {e.fondo.toFixed(1)}
               </text>
               {sel && (
-                <circle
-                  cx={e.x + e.ancho}
-                  cy={e.y + e.fondo}
-                  r={0.4}
-                  className="svg-asa"
-                  onPointerDown={(ev) => {
-                    ev.stopPropagation();
-                    marcarHistoria();
-                    setArrastre({ modo: 'redimensionar', id: e.id });
-                  }}
-                />
+                <>
+                  <circle
+                    cx={e.x + e.ancho}
+                    cy={e.y + e.fondo}
+                    r={0.45}
+                    className="svg-asa"
+                    onPointerDown={(ev) => {
+                      ev.stopPropagation();
+                      marcarHistoria();
+                      setArrastre({ modo: 'redimensionar', id: e.id });
+                    }}
+                  />
+                  {/* Botón de eliminar en la esquina superior derecha */}
+                  <g
+                    onPointerDown={(ev) => {
+                      ev.stopPropagation();
+                      removeEstancia(e.id);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <circle cx={e.x + e.ancho} cy={e.y} r={0.5} className="svg-borrar-fondo" />
+                    <line x1={e.x + e.ancho - 0.22} y1={e.y - 0.22} x2={e.x + e.ancho + 0.22} y2={e.y + 0.22} className="svg-borrar-x" />
+                    <line x1={e.x + e.ancho - 0.22} y1={e.y + 0.22} x2={e.x + e.ancho + 0.22} y2={e.y - 0.22} className="svg-borrar-x" />
+                    <title>Eliminar estancia</title>
+                  </g>
+                </>
               )}
               {/* Huecos: ventanas y puertas sobre las paredes */}
               {(e.huecos ?? []).map((h) => {
@@ -490,7 +523,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
       </svg>
       {seleccionId && (
         <div className="plano-ayuda">
-          Arrastra para mover · círculo para redimensionar · <kbd>Supr</kbd> para eliminar
+          <span>Arrastra para mover · esquina azul para redimensionar · toca la <strong>✕ roja</strong> para eliminar</span>
           <button className="borrar" onClick={() => removeEstancia(seleccionId)}>
             🗑 Eliminar estancia
           </button>

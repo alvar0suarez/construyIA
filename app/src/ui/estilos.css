@@ -160,7 +160,11 @@ details summary {
   display: flex; justify-content: space-between; align-items: center; gap: 8px;
 }
 .reencuadrar { font-size: 11px; padding: 3px 9px; }
-.plano { flex: 1; min-height: 0; width: 100%; touch-action: none; }
+/* touch-action pan-y: un dedo sobre el fondo hace scroll vertical de la
+   página (en móvil el editor es alto y hay que poder deslizar); los
+   elementos interactivos lo sobreescriben a `none` para arrastrarlos. */
+.plano { flex: 1; min-height: 0; width: 100%; touch-action: pan-y; }
+.svg-estancia, .svg-hueco, .svg-asa, .svg-borrar { touch-action: none; }
 .plano-ayuda {
   font-size: 12px; color: var(--tinta-suave);
   display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap;
@@ -183,13 +187,21 @@ details summary {
   fill: none; stroke: #b9b4aa; stroke-width: 0.06;
   stroke-dasharray: 0.2 0.2; pointer-events: none;
 }
-.svg-estancia { stroke: #565045; stroke-width: 0.06; cursor: grab; opacity: 0.94; }
-.svg-estancia.seleccionada { stroke: #1565c0; stroke-width: 0.14; }
+.svg-estancia { stroke: #6b6459; stroke-width: 0.035; cursor: grab; opacity: 0.72; }
+.svg-estancia.seleccionada { stroke: #1565c0; stroke-width: 0.08; opacity: 0.85; }
 .svg-etiqueta {
-  font-size: 0.55px; text-anchor: middle; pointer-events: none; fill: #2f2c25;
+  font-size: 0.5px; text-anchor: middle; pointer-events: none; fill: #2f2c25;
+  font-weight: 600;
 }
-.svg-etiqueta-area { font-size: 0.5px; fill: #68705f; }
+.svg-etiqueta-area { font-size: 0.42px; fill: #7a7568; font-weight: 400; }
+/* Medidas de los lados (ancho arriba, fondo a la izquierda). */
+.svg-medida {
+  font-size: 0.44px; fill: #4a7c65; text-anchor: middle; pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
 .svg-asa { fill: #1565c0; cursor: nwse-resize; }
+.svg-borrar-fondo { fill: var(--error); cursor: pointer; }
+.svg-borrar-x { stroke: #fff; stroke-width: 0.12; pointer-events: none; }
 .svg-guia line {
   stroke: #1565c0; stroke-width: 0.05; stroke-dasharray: 0.25 0.2;
   pointer-events: none;
