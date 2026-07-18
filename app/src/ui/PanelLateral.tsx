@@ -53,7 +53,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
   return (
     <aside className="panel-lateral">
       <section>
-        <h3>📜 Normativa</h3>
+        <h3>Normativa</h3>
         <select
           value={normativaId}
           onChange={(e) => setNormativaId(e.target.value)}
@@ -103,7 +103,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
       </section>
 
       <section>
-        <h3>📐 Parcela</h3>
+        <h3>Parcela</h3>
         <div className="grid-normativa">
           <label>Lado norte (m)<input {...numero(parcela.norte, (n) => setParcela({ norte: n }))} /></label>
           <label>Lado sur (m)<input {...numero(parcela.sur, (n) => setParcela({ sur: n }))} /></label>
@@ -128,7 +128,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
       </section>
 
       <section>
-        <h3>🏗 Planta</h3>
+        <h3>Planta</h3>
         <div className="selector-planta">
           {PLANTAS.map((p) => (
             <button
@@ -145,7 +145,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
       <InspectorEstancia />
 
       <section>
-        <h3>➕ Añadir estancia</h3>
+        <h3>Añadir estancia</h3>
         <div className="paleta">
           {CATALOGO.map((t) => (
             <button

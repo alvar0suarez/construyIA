@@ -41,7 +41,7 @@ export function PanelCumplimiento({
   return (
     <aside className="panel-cumplimiento">
       <section>
-        <h3>📊 Resumen</h3>
+        <h3>Resumen</h3>
         <table className="metricas">
           <tbody>
             <tr><td>Parcela</td><td>{f(m.areaParcela, 0)} m²</td></tr>
@@ -57,7 +57,7 @@ export function PanelCumplimiento({
 
       <section>
         <h3>
-          📜 Normativa{' '}
+          Normativa{' '}
           <span className={errores === 0 ? 'chip ok' : 'chip error'}>
             {errores === 0 ? 'CUMPLE' : `${errores} incumplimiento(s)`}
           </span>
@@ -71,7 +71,7 @@ export function PanelCumplimiento({
 
       {recomendaciones.length > 0 && (
         <section>
-          <h3>💡 Recomendaciones</h3>
+          <h3>Recomendaciones</h3>
           <ul className="lista-reglas">
             {recomendaciones.map((r, i) => (
               <Fila key={i} r={r} />

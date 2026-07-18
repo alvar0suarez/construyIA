@@ -39,7 +39,7 @@ export function Cobertura() {
   return (
     <div className="cobertura">
       <section className="cobertura-intro">
-        <h2>🗺 Cobertura de normativa municipal</h2>
+        <h2>Cobertura de normativa municipal</h2>
         <p>
           Registro público y auditable de las normativas urbanísticas cargadas
           en ConstruyIA: qué municipios están cubiertos, con qué nivel de
@@ -106,7 +106,7 @@ export function Cobertura() {
       </section>
 
       <section>
-        <h3>📋 Tabla de auditoría</h3>
+        <h3>Tabla de auditoría</h3>
         <table className="tabla-auditoria">
           <thead>
             <tr>
@@ -143,7 +143,7 @@ export function Cobertura() {
       </section>
 
       <section className="cobertura-cta">
-        <h3>➕ ¿Falta tu municipio?</h3>
+        <h3>¿Falta tu municipio?</h3>
         <p>
           Puedes usar la <strong>normativa personalizada</strong> en la pestaña
           de diseño introduciendo los parámetros de tu ficha urbanística. Y si

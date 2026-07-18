@@ -49,7 +49,7 @@ export function InspectorEstancia() {
   return (
     <section className="inspector">
       <h3>
-        🔧 {def.icono} {def.nombre}
+        {def.icono} {def.nombre}
         <span className="inspector-area">
           {(estancia.ancho * estancia.fondo).toFixed(1)} m²
           <button
@@ -71,8 +71,8 @@ export function InspectorEstancia() {
       <div className="inspector-huecos-cab">
         <h4>Ventanas y puertas</h4>
         <div>
-          <button onClick={() => addHueco(estancia.id, 'ventana')}>➕ Ventana</button>
-          <button onClick={() => addHueco(estancia.id, 'puerta')}>➕ Puerta</button>
+          <button onClick={() => addHueco(estancia.id, 'ventana')}>+ Ventana</button>
+          <button onClick={() => addHueco(estancia.id, 'puerta')}>+ Puerta</button>
         </div>
       </div>
       {huecos.length === 0 && (

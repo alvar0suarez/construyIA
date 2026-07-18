@@ -58,13 +58,13 @@ export function Cabecera({
           className={pagina === 'diseno' ? 'activa' : ''}
           onClick={() => setPagina('diseno')}
         >
-          ✏️ Diseño
+          Diseño
         </button>
         <button
           className={pagina === 'cobertura' ? 'activa' : ''}
           onClick={() => setPagina('cobertura')}
         >
-          🗺 Cobertura
+          Cobertura
         </button>
       </nav>
       {pagina === 'diseno' && (
@@ -82,8 +82,8 @@ export function Cabecera({
             <button onClick={rehacer} disabled={!hayFuturo} title="Rehacer (Ctrl+Y)">↪</button>
           </>
         )}
-        <button onClick={exportar}>⬇ Exportar</button>
-        <button onClick={() => inputFichero.current?.click()}>⬆ Importar</button>
+        <button onClick={exportar}>Exportar</button>
+        <button onClick={() => inputFichero.current?.click()}>Importar</button>
         <button
           onClick={() => {
             if (confirm('¿Empezar un proyecto nuevo? Se perderá el actual si no lo has exportado.')) {
@@ -91,7 +91,7 @@ export function Cabecera({
             }
           }}
         >
-          ✨ Nuevo
+          Nuevo
         </button>
         <input
           ref={inputFichero}
