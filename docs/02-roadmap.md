@@ -67,6 +67,10 @@ de ser fácil.
 - [x] UX móvil: paneles plegables en pantallas pequeñas, botones táctiles
       más grandes, pellizcar para zoom + paneo en el plano (y rueda en
       escritorio) con botón de reencuadre.
+- [x] Diseñador: **girar el plano** 90° (para ver parcelas alargadas en
+      horizontal en el móvil) y **alejar el zoom** hasta 0,35× (ver toda la
+      parcela con contexto), con arrastre de estancias correcto en cualquier
+      rotación. Botones −/+/girar/encajar.
 - [x] Colisiones en el paseo interior: los muros bloquean el paso, las
       puertas dejan pasar (también en muros fusionados) y Shift los
       atraviesa.
