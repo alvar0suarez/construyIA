@@ -1,5 +1,6 @@
 import { PLANTAS, type Lado, type Proyecto } from '../domain/types';
 import { tipoEstancia } from './catalogo';
+import { alturaCumbrera } from './cubierta';
 import { areaParcela, areaRect, areaUnion } from './geometria';
 
 export interface Metricas {
@@ -11,7 +12,8 @@ export interface Metricas {
   superficieComputable: number;
   edificabilidad: number; // m²/m²
   plantasSobreRasante: number;
-  alturaEdificacion: number; // m
+  alturaEdificacion: number; // m (a cornisa)
+  alturaCumbrera: number; // m (cota más alta del tejado)
   superficieUtilAprox: number; // suma de todas las estancias interiores
   numDormitorios: number;
   numBanyos: number;
@@ -74,6 +76,7 @@ export function calcularMetricas(proyecto: Proyecto): Metricas {
     edificabilidad: aParcela > 0 ? superficieComputable / aParcela : 0,
     plantasSobreRasante: plantasConUso,
     alturaEdificacion,
+    alturaCumbrera: alturaCumbrera(proyecto),
     superficieUtilAprox,
     numDormitorios,
     numBanyos,

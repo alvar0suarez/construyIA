@@ -206,6 +206,41 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     expect(msgs).not.toContain('baño cercano');
   });
 
+  it('cubierta: pendiente y cumbrera contra la normativa', () => {
+    const p = proyectoBase();
+    p.plantas.baja.push({ id: 'b', tipo: 'salon', x: 5, y: 5, ancho: 8, fondo: 6 });
+    // Inclinada 30°: caballete = 3·tan(30°) ≈ 1,73 → cumbrera 3 + 1,73 = 4,73 < 10,1
+    p.cubierta = { tipo: 'inclinada', pendiente: 30 };
+    let ev = evaluar(p, galapagarU3);
+    expect(ev.normativa.find((r) => r.regla === 'cubierta')!.nivel).toBe('ok');
+    expect(ev.normativa.find((r) => r.regla === 'cumbrera')!.nivel).toBe('ok');
+    expect(ev.metricas.alturaCumbrera).toBeCloseTo(3 + 3 * Math.tan(Math.PI / 6), 2);
+
+    // Plana: la ordenanza exige inclinada
+    p.cubierta = { tipo: 'plana', pendiente: 0 };
+    ev = evaluar(p, galapagarU3);
+    expect(ev.normativa.find((r) => r.regla === 'cubierta')!.nivel).toBe('error');
+    expect(ev.metricas.alturaCumbrera).toBeCloseTo(3);
+
+    // Pendiente fuera de rango
+    p.cubierta = { tipo: 'inclinada', pendiente: 55 };
+    ev = evaluar(p, galapagarU3);
+    expect(ev.normativa.find((r) => r.regla === 'cubierta')!.nivel).toBe('error');
+  });
+
+  it('cubierta: la estancia cubierta por la planta superior no lleva tejado', () => {
+    const p = proyectoBase();
+    p.alturaPorPlanta = 3;
+    p.cubierta = { tipo: 'inclinada', pendiente: 45 };
+    // Baja 10×10 con primera 10×10 encima: solo la primera lleva tejado
+    p.plantas.baja.push({ id: 'b', tipo: 'salon', x: 5, y: 5, ancho: 10, fondo: 10 });
+    p.plantas.primera.push({ id: 'p1', tipo: 'dormitorio', x: 5, y: 5, ancho: 10, fondo: 10 });
+    const ev = evaluar(p, galapagarU3);
+    // Cumbrera = 6 (cornisa primera) + 5·tan45 = 11 → supera 10,1
+    expect(ev.metricas.alturaCumbrera).toBeCloseTo(11);
+    expect(ev.normativa.find((r) => r.regla === 'cumbrera')!.nivel).toBe('error');
+  });
+
   it('recomendaciones: baños, escalera y superficie mínima', () => {
     const p = proyectoBase();
     p.plantas.baja.push({ id: 'd1', tipo: 'dormitorio', x: 5, y: 5, ancho: 2, fondo: 2 }); // 4 m² < 10

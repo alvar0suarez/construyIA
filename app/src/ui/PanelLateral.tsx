@@ -1,5 +1,5 @@
 import type { Lado, PlantaId } from '../domain/types';
-import { PLANTAS } from '../domain/types';
+import { CUBIERTA_DEFECTO, PLANTAS } from '../domain/types';
 import { CATALOGO } from '../engine/catalogo';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { NORMATIVAS, PERSONALIZADA_ID } from '../normativa/registry';
@@ -25,6 +25,8 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
   const normativaId = useStore((s) => s.proyecto.normativaId);
   const ajustes = useStore((s) => s.proyecto.ajustesNormativa?.[s.proyecto.normativaId]);
   const alturaPorPlanta = useStore((s) => s.proyecto.alturaPorPlanta);
+  const cubiertaRaw = useStore((s) => s.proyecto.cubierta);
+  const cubierta = cubiertaRaw ?? CUBIERTA_DEFECTO;
   const plantaActiva = useStore((s) => s.plantaActiva);
   const setParcela = useStore((s) => s.setParcela);
   const setNormativaId = useStore((s) => s.setNormativaId);
@@ -32,6 +34,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
   const setAjusteNormativa = useStore((s) => s.setAjusteNormativa);
   const resetAjustesNormativa = useStore((s) => s.resetAjustesNormativa);
   const setAlturaPorPlanta = useStore((s) => s.setAlturaPorPlanta);
+  const setCubierta = useStore((s) => s.setCubierta);
   const setPlantaActiva = useStore((s) => s.setPlantaActiva);
   const addEstancia = useStore((s) => s.addEstancia);
 
@@ -125,6 +128,31 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
           Altura por planta (m):
           <input {...numero(alturaPorPlanta, setAlturaPorPlanta)} step={0.1} />
         </label>
+        <div className="fila grid-normativa">
+          <label>
+            Cubierta
+            <select
+              value={cubierta.tipo}
+              onChange={(e) =>
+                setCubierta({ ...cubierta, tipo: e.target.value as 'plana' | 'inclinada' })
+              }
+            >
+              <option value="inclinada">Inclinada</option>
+              <option value="plana">Plana</option>
+            </select>
+          </label>
+          {cubierta.tipo === 'inclinada' && (
+            <label>
+              Pendiente (°)
+              <input
+                {...numero(cubierta.pendiente, (n) =>
+                  setCubierta({ ...cubierta, pendiente: Math.min(60, Math.max(5, n)) }),
+                )}
+                step={1}
+              />
+            </label>
+          )}
+        </div>
       </section>
 
       <section>

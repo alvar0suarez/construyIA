@@ -64,4 +64,8 @@ export interface Proyecto {
   plantas: Record<PlantaId, Estancia[]>;
   /** Altura libre + forjado por planta sobre rasante, en metros. */
   alturaPorPlanta: number;
+  /** Cubierta de la vivienda. Si falta, se asume inclinada a 30°. */
+  cubierta?: { tipo: 'plana' | 'inclinada'; pendiente: number };
 }
+
+export const CUBIERTA_DEFECTO = { tipo: 'inclinada', pendiente: 30 } as const;

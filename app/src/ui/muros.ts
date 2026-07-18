@@ -1,5 +1,6 @@
 import { ExtrudeGeometry, Path, Shape } from 'three';
 import type { Estancia, Lado } from '../domain/types';
+import { alturaTejado } from '../engine/cubierta';
 
 export const GROSOR_MURO = 0.12;
 
@@ -27,10 +28,67 @@ export interface CristalSpec {
  * rotan -90° sobre Y (X local = Z mundo). El offset del hueco se mide desde
  * el oeste (paredes N/S) o desde el norte (paredes E/O), igual que en 2D.
  */
+/**
+ * Tejado a dos aguas sobre una estancia: prisma triangular con el caballete
+ * a lo largo del lado mayor.
+ */
+export function tejadoDeEstancia(
+  e: Estancia,
+  cotaCornisa: number,
+  pendienteGrados: number,
+): MuroSpec {
+  const h = alturaTejado(e, pendienteGrados);
+  const aLoLargoDeX = e.ancho >= e.fondo;
+  const luz = aLoLargoDeX ? e.fondo : e.ancho;
+  const largo = aLoLargoDeX ? e.ancho : e.fondo;
+
+  const seccion = new Shape();
+  seccion.moveTo(0, 0);
+  seccion.lineTo(luz, 0);
+  seccion.lineTo(luz / 2, h);
+  seccion.closePath();
+  const geometria = new ExtrudeGeometry(seccion, { depth: largo, bevelEnabled: false });
+
+  // Con caballete según X: rotación 90° sobre Y ⇒ local (x,y,z) → (z, y, -x)
+  return aLoLargoDeX
+    ? { geometria, posicion: [e.x, cotaCornisa, e.y + e.fondo], rotacionY: Math.PI / 2 }
+    : { geometria, posicion: [e.x, cotaCornisa, e.y], rotacionY: 0 };
+}
+
+/**
+ * Lados de una estancia cuyo muro puede omitirse porque otra estancia
+ * anterior de la misma planta aporta ya la pared completa (fusión de muros
+ * compartidos). Solo se omite si el muro de `e` no tiene huecos en ese lado
+ * y el muro vecino cubre todo el tramo.
+ */
+export function ladosCubiertos(e: Estancia, anteriores: Estancia[]): Set<Lado> {
+  const eps = 0.05;
+  const cubiertos = new Set<Lado>();
+  const conHueco = new Set((e.huecos ?? []).map((h) => h.lado));
+  for (const o of anteriores) {
+    const cubreX = o.x <= e.x + eps && o.x + o.ancho >= e.x + e.ancho - eps;
+    const cubreY = o.y <= e.y + eps && o.y + o.fondo >= e.y + e.fondo - eps;
+    if (Math.abs(o.y + o.fondo - e.y) <= eps && cubreX && !conHueco.has('norte')) {
+      cubiertos.add('norte');
+    }
+    if (Math.abs(e.y + e.fondo - o.y) <= eps && cubreX && !conHueco.has('sur')) {
+      cubiertos.add('sur');
+    }
+    if (Math.abs(o.x + o.ancho - e.x) <= eps && cubreY && !conHueco.has('oeste')) {
+      cubiertos.add('oeste');
+    }
+    if (Math.abs(e.x + e.ancho - o.x) <= eps && cubreY && !conHueco.has('este')) {
+      cubiertos.add('este');
+    }
+  }
+  return cubiertos;
+}
+
 export function murosDeEstancia(
   e: Estancia,
   base: number,
   altura: number,
+  omitir: Set<Lado> = new Set(),
 ): { muros: MuroSpec[]; cristales: CristalSpec[] } {
   const muros: MuroSpec[] = [];
   const cristales: CristalSpec[] = [];
@@ -86,7 +144,7 @@ export function murosDeEstancia(
   };
 
   for (const lado of ['norte', 'sur', 'este', 'oeste'] as Lado[]) {
-    muros.push(construir(lado));
+    if (!omitir.has(lado)) muros.push(construir(lado));
   }
 
   for (const h of e.huecos ?? []) {

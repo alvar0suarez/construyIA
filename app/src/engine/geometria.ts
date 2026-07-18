@@ -70,6 +70,13 @@ export function contenidoEn(interior: Rect, exterior: Rect): boolean {
   );
 }
 
+/** Área de la intersección de dos rectángulos. */
+export function areaInterseccion(a: Rect, b: Rect): number {
+  const dx = Math.min(a.x + a.ancho, b.x + b.ancho) - Math.max(a.x, b.x);
+  const dy = Math.min(a.y + a.fondo, b.y + b.fondo) - Math.max(a.y, b.y);
+  return Math.max(0, dx) * Math.max(0, dy);
+}
+
 /** Distancia mínima entre dos rectángulos (0 si se tocan o solapan). */
 export function distanciaRects(a: Rect, b: Rect): number {
   const dx = Math.max(0, Math.max(a.x - (b.x + b.ancho), b.x - (a.x + a.ancho)));
