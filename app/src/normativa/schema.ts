@@ -36,6 +36,10 @@ export interface NormativaMunicipal {
   alturaMaxima: number;
   /** Nº máximo de plantas sobre rasante. */
   plantasMaximas: number;
+  /** Retranqueo mínimo de la piscina a todos los linderos, en metros. */
+  retranqueoPiscina?: number;
   /** Condiciones (estéticas u otras) aún no modeladas de forma estructurada. */
   notas?: string;
+  /** Coordenadas del municipio, para el mapa de cobertura. */
+  ubicacion?: { lat: number; lng: number };
 }

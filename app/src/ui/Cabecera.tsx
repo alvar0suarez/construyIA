@@ -1,8 +1,15 @@
 import { useRef } from 'react';
 import type { Proyecto } from '../domain/types';
 import { useStore } from '../state/store';
+import type { Pagina } from './App';
 
-export function Cabecera() {
+export function Cabecera({
+  pagina,
+  setPagina,
+}: {
+  pagina: Pagina;
+  setPagina: (p: Pagina) => void;
+}) {
   const nombre = useStore((s) => s.proyecto.nombre);
   const setNombre = useStore((s) => s.setNombre);
   const proyecto = useStore((s) => s.proyecto);
@@ -34,6 +41,20 @@ export function Cabecera() {
   return (
     <header className="cabecera">
       <span className="logo">🏠 ConstruyIA</span>
+      <nav className="pestanas">
+        <button
+          className={pagina === 'diseno' ? 'activa' : ''}
+          onClick={() => setPagina('diseno')}
+        >
+          ✏️ Diseño
+        </button>
+        <button
+          className={pagina === 'cobertura' ? 'activa' : ''}
+          onClick={() => setPagina('cobertura')}
+        >
+          🗺 Cobertura
+        </button>
+      </nav>
       <input
         className="nombre-proyecto"
         value={nombre}

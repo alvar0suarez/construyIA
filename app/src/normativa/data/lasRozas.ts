@@ -31,4 +31,5 @@ export const lasRozasNZ3: NormativaMunicipal = {
   notas:
     'VALORES PROVISIONALES pendientes de verificar con la NZ-3. Los parámetros ' +
     'reales dependen del grado asignado a la parcela en el plano de ordenación.',
+  ubicacion: { lat: 40.4919, lng: -3.8735 },
 };

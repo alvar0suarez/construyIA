@@ -27,5 +27,7 @@ export const galapagarU3: NormativaMunicipal = {
     'Cubierta inclinada 20–45°. Teja cerámica o pizarra. Sin ladrillo visto. ' +
     'Sin carpintería de aluminio en color natural. Garaje bajo rasante no ' +
     'computa edificabilidad (Art. 3.11.2.2.A). Tipología aislada o pareada ' +
-    '(en pareado, retranqueo nulo al lindero común).',
+    '(en pareado, retranqueo nulo al lindero común). Retranqueo de piscina ' +
+    'pendiente de verificar en las NNSS.',
+  ubicacion: { lat: 40.5794, lng: -4.0028 },
 };

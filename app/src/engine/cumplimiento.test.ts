@@ -112,6 +112,25 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     expect(ev.normativa.find((r) => r.regla === 'parcela-minima')!.nivel).toBe('error');
   });
 
+  it('retranqueo de piscina: valida contra todos los linderos', () => {
+    const p = proyectoBase();
+    const normativaConPiscina = { ...galapagarU3, retranqueoPiscina: 3 };
+    p.plantas.baja.push({ id: 'pi', tipo: 'piscina', x: 1, y: 10, ancho: 4, fondo: 8 });
+    let regla = evaluar(p, normativaConPiscina).normativa.find(
+      (r) => r.regla === 'retranqueo-piscina',
+    )!;
+    expect(regla.nivel).toBe('error');
+    p.plantas.baja[0].x = 3.5;
+    regla = evaluar(p, normativaConPiscina).normativa.find(
+      (r) => r.regla === 'retranqueo-piscina',
+    )!;
+    expect(regla.nivel).toBe('ok');
+    // Sin el parámetro en la normativa, no se emite la regla
+    expect(
+      evaluar(p, galapagarU3).normativa.find((r) => r.regla === 'retranqueo-piscina'),
+    ).toBeUndefined();
+  });
+
   it('recomendaciones: baños, escalera y superficie mínima', () => {
     const p = proyectoBase();
     p.plantas.baja.push({ id: 'd1', tipo: 'dormitorio', x: 5, y: 5, ancho: 2, fondo: 2 }); // 4 m² < 10

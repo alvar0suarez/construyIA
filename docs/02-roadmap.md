@@ -16,7 +16,10 @@ repositorio, útil para comparar parcelas y bocetar.
 - [x] Motor de cumplimiento: retranqueos, ocupación, edificabilidad, altura, nº de plantas.
 - [x] Recomendaciones: superficies mínimas por estancia, ratio dormitorios/baños, plazas de garaje, escalera si hay planta alta.
 - [x] Persistencia en localStorage + exportar/importar proyecto JSON (para compartir con la familia).
-- [ ] Vista 3D del volumen (portar la parte Three.js de la app original).
+- [x] Vista 3D del volumen (three.js): estancias extruidas por planta, sótano translúcido y "jaula" de la envolvente edificable hasta la altura máxima.
+- [x] Página de **cobertura de normativa**: mapa de España (provincias, es-atlas/IGN) con los municipios cargados, y tabla de auditoría pública (municipio, zona, estado de verificación, fecha de revisión, fuentes).
+- [x] Retranqueo de piscina a linderos como parámetro opcional de normativa.
+- [x] CI en GitHub Actions (tests + build).
 - [ ] Parcelas no rectangulares (polígono libre de N vértices).
 - [ ] Despliegue automático (GitHub Pages) para compartir por URL.
 

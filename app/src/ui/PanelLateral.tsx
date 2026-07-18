@@ -70,6 +70,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
             <label>Altura máx. (m)<input {...numero(normativa.alturaMaxima, (n) => setPersonalizada({ alturaMaxima: n }))} /></label>
             <label>Plantas máx.<input {...numero(normativa.plantasMaximas, (n) => setPersonalizada({ plantasMaximas: Math.round(n) }))} step={1} /></label>
             <label>Parcela mín. (m²)<input {...numero(normativa.parcelaMinima ?? 0, (n) => setPersonalizada({ parcelaMinima: n || undefined }))} step={50} /></label>
+            <label>Retr. piscina (m)<input {...numero(normativa.retranqueoPiscina ?? 0, (n) => setPersonalizada({ retranqueoPiscina: n || undefined }))} /></label>
           </div>
         ) : (
           <details>

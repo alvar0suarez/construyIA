@@ -1,7 +1,12 @@
 import { PLANTAS, type Proyecto } from '../domain/types';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { tipoEstancia } from './catalogo';
-import { areaRect, contenidoEn, envolventeEdificable } from './geometria';
+import {
+  areaRect,
+  contenidoEn,
+  dimensionesParcela,
+  envolventeEdificable,
+} from './geometria';
 import { calcularMetricas, type Metricas } from './metricas';
 
 export type Nivel = 'ok' | 'aviso' | 'error';
@@ -71,6 +76,38 @@ export function evaluar(
         : `${invasoras.length} estancia(s) invaden la zona de retranqueo.`,
     limite: `frente ${normativa.retranqueos.frente} m · fondo ${normativa.retranqueos.fondo} m · lateral ${normativa.retranqueos.lateral} m`,
   });
+
+  // --- Retranqueo de piscina ---
+  if (normativa.retranqueoPiscina != null) {
+    const d = dimensionesParcela(proyecto.parcela);
+    const r = normativa.retranqueoPiscina;
+    const zonaPiscina = {
+      x: r,
+      y: r,
+      ancho: Math.max(0, d.ancho - 2 * r),
+      fondo: Math.max(0, d.fondo - 2 * r),
+    };
+    const piscinasFuera = Object.values(proyecto.plantas)
+      .flat()
+      .filter((e) => e.tipo === 'piscina' && !contenidoEn(e, zonaPiscina));
+    if (piscinasFuera.length > 0) {
+      reglas.push({
+        regla: 'retranqueo-piscina',
+        nivel: 'error',
+        mensaje: 'La piscina está a menos distancia del lindero de la permitida.',
+        limite: `≥ ${f(r)} m a todos los linderos`,
+      });
+    } else if (
+      Object.values(proyecto.plantas).flat().some((e) => e.tipo === 'piscina')
+    ) {
+      reglas.push({
+        regla: 'retranqueo-piscina',
+        nivel: 'ok',
+        mensaje: 'La piscina respeta el retranqueo a linderos.',
+        limite: `≥ ${f(r)} m`,
+      });
+    }
+  }
 
   // --- Ocupación ---
   const okOcup = m.ocupacionPct <= normativa.ocupacionMaxima + 1e-6;

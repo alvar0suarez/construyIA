@@ -54,3 +54,4 @@ npm run build      # build de producción
 - [03 — Arquitectura técnica](docs/03-arquitectura.md)
 - [04 — Modelo de normativa y fuentes](docs/04-normativa.md)
 - [05 — Inventario de la app original](docs/05-app-original.md)
+- [06 — Portal público de cobertura](docs/06-portal-cobertura.md)
