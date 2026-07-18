@@ -57,6 +57,7 @@ interface AppState {
   addEstancia: (tipoId: string) => void;
   updateEstancia: (id: string, rect: Partial<Rect>) => void;
   removeEstancia: (id: string) => void;
+  duplicarEstancia: (id: string) => void;
 
   addHueco: (estanciaId: string, tipo: Hueco['tipo']) => void;
   updateHueco: (estanciaId: string, huecoId: string, parcial: Partial<Hueco>) => void;
@@ -195,6 +196,29 @@ export const useStore = create<AppState>()(
             futuro: [],
             proyecto: { ...s.proyecto, plantas },
             seleccionId: s.seleccionId === id ? null : s.seleccionId,
+            seleccionHuecoId: null,
+          };
+        }),
+
+      duplicarEstancia: (id) =>
+        set((s) => {
+          const original = s.proyecto.plantas[s.plantaActiva].find((e) => e.id === id);
+          if (!original) return s;
+          const dims = dimensionesParcela(s.proyecto.parcela);
+          const copia: Estancia = {
+            ...original,
+            id: nuevoId('e'),
+            x: Math.min(original.x + 0.5, Math.max(0, dims.ancho - original.ancho)),
+            y: Math.min(original.y + 0.5, Math.max(0, dims.fondo - original.fondo)),
+            huecos: (original.huecos ?? []).map((h) => ({ ...h, id: nuevoId('h') })),
+          };
+          const plantas = { ...s.proyecto.plantas };
+          plantas[s.plantaActiva] = [...plantas[s.plantaActiva], copia];
+          return {
+            pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+            futuro: [],
+            proyecto: { ...s.proyecto, plantas },
+            seleccionId: copia.id,
             seleccionHuecoId: null,
           };
         }),

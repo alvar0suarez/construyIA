@@ -173,6 +173,7 @@ details summary { cursor: pointer; font-size: 12px; color: var(--acento); }
 }
 .inspector h3 { display: flex; justify-content: space-between; align-items: baseline; }
 .inspector-area { font-size: 11px; color: var(--tinta-suave); font-weight: normal; }
+.inspector-area .duplicar { margin-left: 6px; padding: 1px 7px; font-size: 12px; }
 .inspector-huecos-cab {
   display: flex; justify-content: space-between; align-items: center;
   margin-top: 10px;
