@@ -129,8 +129,10 @@ ficha urbanística de su parcela o para municipios aún no cargados.
 ## Qué NO modela aún el esquema (roadmap F1)
 
 - Grados/subzonas dentro de una ordenanza (Las Rozas los necesita).
-- Reglas de cómputo de edificabilidad por normativa (porches, sótanos,
-  bajocubierta, garajes — cada municipio computa distinto).
+- ~~Reglas de cómputo de edificabilidad por normativa~~ ✅ **hecho (F1.1)**:
+  el campo opcional `computo.edificabilidad` sobrescribe el coeficiente del
+  catálogo por tipo de estancia (Galapagar usa `{ porche: 0.6 }`). Falta
+  ampliarlo a sótanos/bajocubierta con reglas por cota.
 - Condiciones estéticas estructuradas (cubierta, materiales, vuelos).
 - Retranqueos especiales (a viales concretos, entre edificaciones, piscinas).
 - Fondo edificable máximo, longitud máxima de fachada, parcela mínima por

@@ -40,6 +40,8 @@ export const galapagarU3: NormativaMunicipal = {
   alturaMaximaCumbrera: 10.1,
   pendienteCubierta: { min: 20, max: 45 },
   plantasMaximas: 2,
+  // Espacios cubiertos cerrados por 1-2 lados computan al 60 % (§ cómputo).
+  computo: { edificabilidad: { porche: 0.6 } },
   notas:
     'RU3 admite tipología aislada o pareada (en pareado, retranqueo nulo al ' +
     'lindero común con proyecto unitario). Frente mínimo de parcela 10 m. ' +

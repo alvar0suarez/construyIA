@@ -35,7 +35,7 @@ export function evaluar(
   proyecto: Proyecto,
   normativa: NormativaMunicipal,
 ): Evaluacion {
-  const m = calcularMetricas(proyecto);
+  const m = calcularMetricas(proyecto, normativa);
   const reglas: ResultadoRegla[] = [];
   const recomendaciones: ResultadoRegla[] = [];
 

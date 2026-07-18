@@ -1,7 +1,20 @@
 import { PLANTAS, type Lado, type Proyecto } from '../domain/types';
+import type { NormativaMunicipal } from '../normativa/schema';
 import { tipoEstancia } from './catalogo';
 import { alturaCumbrera } from './cubierta';
 import { areaParcela, areaRect, areaUnion } from './geometria';
+
+/**
+ * Coeficiente de edificabilidad de un tipo de estancia: el de la normativa
+ * si lo sobrescribe, si no el del catálogo.
+ */
+export function coefEdificabilidad(
+  tipoId: string,
+  normativa?: NormativaMunicipal,
+): number {
+  const override = normativa?.computo?.edificabilidad?.[tipoId];
+  return override ?? tipoEstancia(tipoId).computaEdif;
+}
 
 export interface Metricas {
   areaParcela: number;
@@ -22,7 +35,10 @@ export interface Metricas {
   ventanasPorOrientacion: Record<Lado, number>;
 }
 
-export function calcularMetricas(proyecto: Proyecto): Metricas {
+export function calcularMetricas(
+  proyecto: Proyecto,
+  normativa?: NormativaMunicipal,
+): Metricas {
   const aParcela = areaParcela(proyecto.parcela);
 
   const sobreRasante = PLANTAS.filter((p) => p.sobreRasante).map(
@@ -37,7 +53,7 @@ export function calcularMetricas(proyecto: Proyecto): Metricas {
   let superficieComputable = 0;
   for (const estancias of sobreRasante) {
     for (const e of estancias) {
-      superficieComputable += areaRect(e) * tipoEstancia(e.tipo).computaEdif;
+      superficieComputable += areaRect(e) * coefEdificabilidad(e.tipo, normativa);
     }
   }
 
