@@ -76,6 +76,26 @@ en tramitación que transcribe las NN.SS 89), no el texto refundido vigente
 de las NN.SS 89. Para subir a `contrastada` hay que cotejar con ese texto
 (solicitable al Ayuntamiento) y confirmar el grado exacto de la parcela.
 
+**Cotejo ampliado (2026-07-18, sobre el PDF aportado por el propietario,
+guardado en [`docs/normativa-fuentes/`](normativa-fuentes/README.md))**:
+
+- **Grado RU4** añadido al registro (parcela 250 m², ocupación 50 %,
+  edificabilidad 0,50, altura 6,6 m) — el propietario confirma que su
+  parcela es RU4.
+- **Piscinas** (§6.2.6, edificaciones auxiliares): enterradas (≤1 m sobre
+  el terreno circundante) **no computan ocupación ni edificabilidad y
+  pueden adosarse a linderos**; elevadas ≥1 m deben ir a 3 m de linderos y
+  vía pública (salvo autorización escrita del colindante). Por eso el
+  parámetro `retranqueoPiscina` queda sin fijar en Galapagar: la regla
+  depende de la cota de la piscina (pendiente de modelar en F1).
+- **Cómputo de espacios cubiertos** (condiciones generales): cerrados por
+  1-2 lados computan al **60 %**, por 3+ lados al 100 %. El catálogo de la
+  app usa ahora 60 % para el porche (antes 50 %).
+- **Edificaciones auxiliares**: máximo 100 m² construibles, solo planta
+  baja, cumbrera ≤3 m (vestuarios de piscina en RU: cornisa 3 m, cumbrera
+  6 m); techadas computan ocupación al 100 % y edificabilidad al 50 %
+  (100 % si cerradas por 3+ lados); bajo rasante no computan.
+
 **Fuentes**:
 - [Normas urbanísticas de Galapagar (Comunidad de Madrid)](https://www.comunidad.madrid/transparencia/sites/default/files/regulation/documents/03_normas_urbanisticas_1.pdf)
 - [NNSS vigentes (visor Planea, IDEM Madrid)](https://idem.madrid.org/cartografia/planea/planeamiento/planeamiento/Galapagar/Vigente/NURBANISTICAS.PDF)

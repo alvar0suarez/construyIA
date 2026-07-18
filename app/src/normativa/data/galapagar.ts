@@ -20,7 +20,11 @@ export const galapagarU3: NormativaMunicipal = {
   fechaRevision: '2026-07-18',
   fuentes: [
     {
-      titulo: 'Avance PGOU Galapagar — Normas urbanísticas (Ordenanza 3 Unifamiliar RU y cuadro La Navata)',
+      titulo: 'Avance PGOU Galapagar — Normas urbanísticas (copia en el repositorio, aportada por el propietario)',
+      url: 'https://github.com/alvar0suarez/construyIA/blob/main/docs/normativa-fuentes/galapagar-pgou-avance-normas-urbanisticas.pdf',
+    },
+    {
+      titulo: 'Original en el portal de transparencia de la Comunidad de Madrid',
       url: 'https://www.comunidad.madrid/transparencia/sites/default/files/regulation/documents/03_normas_urbanisticas_1.pdf',
     },
     {
@@ -39,12 +43,15 @@ export const galapagarU3: NormativaMunicipal = {
     'lindero común con proyecto unitario). Frente mínimo de parcela 10 m. ' +
     'Separación entre edificaciones 3 m. 2 plazas de aparcamiento por ' +
     'vivienda dentro de la parcela. En la ordenanza RU no computa la ' +
-    'edificabilidad bajo cubierta ni bajo rasante. Estética: prohibido ' +
-    'ladrillo visto, revoco a la tirolesa y aluminio en color natural; ' +
-    'preferencia por madera, cerámico o pétreo. ⚠️ OJO: la app original ' +
-    'usaba ocupación 50 % — el Avance del PGOU documenta 30 % para RU3; ' +
-    'si tu parcela es de grado RU4, elige "Galapagar RU4". Verifica el ' +
-    'grado exacto con el Ayuntamiento.',
+    'edificabilidad bajo cubierta ni bajo rasante. Piscinas (edificación ' +
+    'auxiliar, §6.2.6): enterradas (≤1 m sobre el terreno) no computan y ' +
+    'pueden adosarse a linderos; elevadas ≥1 m, a 3 m de linderos y vía ' +
+    'pública salvo autorización del colindante. Edificaciones auxiliares: ' +
+    'máx. 100 m², solo planta baja, cumbrera ≤3 m (6 m en vestuarios RU); ' +
+    'techadas computan ocupación 100 % y edificabilidad 50 % (100 % si ' +
+    'cerradas por 3+ lados). Estética: prohibido ladrillo visto, revoco a ' +
+    'la tirolesa y aluminio en color natural. ⚠️ Si tu parcela es de grado ' +
+    'RU4, elige "Galapagar RU4"; verifica el grado con el Ayuntamiento.',
   ubicacion: { lat: 40.5794, lng: -4.0028 },
 };
 
@@ -74,7 +81,9 @@ export const galapagarRU4: NormativaMunicipal = {
     'permite). En parcelas registradas antes de la modificación de las ' +
     'NN.SS el retranqueo a calle es 4 m y a linderos mínimo 3 m — ajusta ' +
     'los valores si es tu caso. No computa edificabilidad bajo cubierta ni ' +
-    'bajo rasante. 2 plazas de aparcamiento por vivienda. Mismas ' +
-    'condiciones estéticas que RU3.',
+    'bajo rasante. 2 plazas de aparcamiento por vivienda. Piscinas y ' +
+    'edificaciones auxiliares: mismas reglas que RU3 (§6.2.6: piscina ' +
+    'enterrada adosable y sin cómputo; elevada ≥1 m, a 3 m de linderos). ' +
+    'Mismas condiciones estéticas que RU3.',
   ubicacion: { lat: 40.5794, lng: -4.0028 },
 };
