@@ -41,24 +41,40 @@ interface NormativaMunicipal {
 
 ## Normativas incluidas en F0
 
-### Galapagar — Residencial Unifamiliar U3 (UA4) · `borrador`
+### Galapagar — Residencial Unifamiliar RU3/U3 (La Navata) · `borrador` (cotejo parcial)
 
-Valores portados de la app original (introducidos en su día a partir de las
-NNSS de Galapagar). Se mantienen en `borrador` hasta hacer un cotejo
-sistemático parámetro a parámetro contra el documento oficial:
+**Cotejo del 2026-07-18** contra los documentos oficiales accesibles online:
 
-| Parámetro | Valor |
-|---|---|
-| Retranqueo a frente | 4 m |
-| Retranqueo a fondo y laterales | 3 m |
-| Ocupación máxima | 50 % |
-| Edificabilidad máxima | 0,5 m²/m² |
-| Altura máxima | 6,5 m |
-| Plantas máximas | 2 |
+1. El PDF "vigente" del visor Planea resultó ser el **texto refundido de las
+   NNSS de 1976** (COPLACO), que no contiene la nomenclatura U3/UA4 (usa
+   grados RU0–RU5 antiguos).
+2. El documento de la Comunidad de Madrid es el **Avance del PGOU** (en
+   tramitación), que transcribe las condiciones de las **NN.SS 88/89 para el
+   ámbito de La Navata** — el origen real de la "U3 (UA4)" de la app
+   original.
 
-Notas de la ordenanza (de la app original): cubierta inclinada 20–45°; teja
-cerámica o pizarra; sin ladrillo visto; sin carpintería de aluminio en color
-natural; garaje bajo rasante no computa edificabilidad (Art. 3.11.2.2.A).
+Valores adoptados (grado **RU3**, aislada/pareada, La Navata):
+
+| Parámetro | Valor | ¿Coincide con la app original? |
+|---|---|---|
+| Parcela mínima | 500 m² | ✅ |
+| Frente mínimo de parcela | 10 m | (no modelado aún) |
+| Retranqueo a fachada/calle | 4 m | ✅ |
+| Retranqueo a laterales y testero | 3 m | ✅ |
+| **Ocupación máxima** | **30 %** | ⚠️ **La app original usaba 50 %** (valor del grado RU4) |
+| Edificabilidad máxima | 0,5 m²/m² | ✅ |
+| Altura máxima | 6,5 m | ✅ |
+| Plantas máximas | 2 | ✅ |
+| Aparcamiento | 2 plazas/vivienda en parcela | (recomendación en la app) |
+
+Se adopta el **30 % de ocupación** (valor documentado y más conservador).
+No computa edificabilidad bajo cubierta ni bajo rasante. Estética: prohibido
+ladrillo visto, revoco a la tirolesa y aluminio natural en carpinterías.
+
+**Por qué sigue en `borrador`**: la fuente es el Avance del PGOU (documento
+en tramitación que transcribe las NN.SS 89), no el texto refundido vigente
+de las NN.SS 89. Para subir a `contrastada` hay que cotejar con ese texto
+(solicitable al Ayuntamiento) y confirmar el grado exacto de la parcela.
 
 **Fuentes**:
 - [Normas urbanísticas de Galapagar (Comunidad de Madrid)](https://www.comunidad.madrid/transparencia/sites/default/files/regulation/documents/03_normas_urbanisticas_1.pdf)

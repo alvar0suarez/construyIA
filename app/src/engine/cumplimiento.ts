@@ -3,8 +3,10 @@ import type { NormativaMunicipal } from '../normativa/schema';
 import { tipoEstancia } from './catalogo';
 import {
   areaRect,
+  compartenPared,
   contenidoEn,
   dimensionesParcela,
+  distanciaRects,
   envolventeEdificable,
 } from './geometria';
 import { calcularMetricas, type Metricas } from './metricas';
@@ -240,6 +242,52 @@ export function evaluar(
           'riesgo de sobrecalentamiento en las tardes de verano y mayor gasto ' +
           'en climatización. Valora protecciones solares o redistribuir huecos.',
       });
+    }
+  }
+
+  // --- Distribución: adyacencias (por planta, como en la app original) ---
+  for (const p of PLANTAS) {
+    const enPlanta = proyecto.plantas[p.id] ?? [];
+    const cocinas = enPlanta.filter((e) => e.tipo === 'cocina');
+    const comedores = enPlanta.filter((e) => e.tipo === 'comedor');
+    if (
+      cocinas.length > 0 &&
+      comedores.length > 0 &&
+      !cocinas.some((c) => comedores.some((co) => compartenPared(c, co)))
+    ) {
+      recomendaciones.push({
+        regla: 'adyacencia',
+        nivel: 'aviso',
+        mensaje: `${p.nombre}: la cocina y el comedor no comparten pared (servir será incómodo).`,
+      });
+    }
+
+    const banyosPlanta = enPlanta.filter((e) => tipoEstancia(e.tipo).esBanyo);
+    const principal = enPlanta.find((e) => e.tipo === 'dormPrincipal');
+    if (
+      principal &&
+      banyosPlanta.length > 0 &&
+      !banyosPlanta.some((b) => compartenPared(principal, b))
+    ) {
+      recomendaciones.push({
+        regla: 'adyacencia',
+        nivel: 'aviso',
+        mensaje: 'El dormitorio principal no tiene baño en suite (pared compartida).',
+      });
+    }
+
+    const dormitoriosPlanta = enPlanta.filter((e) => tipoEstancia(e.tipo).esDormitorio);
+    if (dormitoriosPlanta.length > 0 && banyosPlanta.length > 0) {
+      const lejanos = dormitoriosPlanta.filter(
+        (d) => !banyosPlanta.some((b) => distanciaRects(d, b) < 3),
+      );
+      if (lejanos.length === dormitoriosPlanta.length) {
+        recomendaciones.push({
+          regla: 'adyacencia',
+          nivel: 'aviso',
+          mensaje: `${p.nombre}: ningún dormitorio tiene un baño cercano (< 3 m).`,
+        });
+      }
     }
   }
 
