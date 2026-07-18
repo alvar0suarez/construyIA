@@ -16,6 +16,7 @@ export function InspectorEstancia() {
   const seleccionHuecoId = useStore((s) => s.seleccionHuecoId);
   const setSeleccionHueco = useStore((s) => s.setSeleccionHueco);
   const updateEstancia = useStore((s) => s.updateEstancia);
+  const duplicarEstancia = useStore((s) => s.duplicarEstancia);
   const marcarHistoria = useStore((s) => s.marcarHistoria);
   const addHueco = useStore((s) => s.addHueco);
   const updateHueco = useStore((s) => s.updateHueco);
@@ -51,6 +52,13 @@ export function InspectorEstancia() {
         🔧 {def.icono} {def.nombre}
         <span className="inspector-area">
           {(estancia.ancho * estancia.fondo).toFixed(1)} m²
+          <button
+            className="duplicar"
+            title="Duplicar estancia (con sus huecos)"
+            onClick={() => duplicarEstancia(estancia.id)}
+          >
+            ⧉
+          </button>
         </span>
       </h3>
       <div className="grid-normativa">

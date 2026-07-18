@@ -69,6 +69,20 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
 
   const snap = (v: number) => Math.round(v / SNAP) * SNAP;
 
+  /** Imán: si `valor` está cerca de algún candidato, salta a él. */
+  const iman = (valor: number, candidatos: number[], tolerancia = 0.3): number => {
+    let mejor = valor;
+    let distancia = tolerancia;
+    for (const c of candidatos) {
+      const d = Math.abs(valor - c);
+      if (d < distancia) {
+        distancia = d;
+        mejor = c;
+      }
+    }
+    return mejor;
+  };
+
   const onMover = (e: React.PointerEvent) => {
     if (!arrastre) return;
     const p = aMetros(e);
@@ -88,15 +102,28 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
     }
     const est = estancias.find((x) => x.id === arrastre.id);
     if (!est) return;
+    // Bordes de otras estancias (esta planta y las demás) y de la envolvente,
+    // como objetivos magnéticos para pegar y alinear.
+    const vecinas = [...estancias.filter((o) => o.id !== est.id), ...fantasmas];
     if (arrastre.modo === 'mover') {
+      const candX = [envolvente.x, envolvente.x + envolvente.ancho - est.ancho];
+      const candY = [envolvente.y, envolvente.y + envolvente.fondo - est.fondo];
+      for (const o of vecinas) {
+        candX.push(o.x, o.x + o.ancho, o.x - est.ancho, o.x + o.ancho - est.ancho);
+        candY.push(o.y, o.y + o.fondo, o.y - est.fondo, o.y + o.fondo - est.fondo);
+      }
       updateEstancia(est.id, {
-        x: snap(Math.min(Math.max(p.x - arrastre.dx, 0), dims.ancho - est.ancho)),
-        y: snap(Math.min(Math.max(p.y - arrastre.dy, 0), dims.fondo - est.fondo)),
+        x: iman(snap(Math.min(Math.max(p.x - arrastre.dx, 0), dims.ancho - est.ancho)), candX),
+        y: iman(snap(Math.min(Math.max(p.y - arrastre.dy, 0), dims.fondo - est.fondo)), candY),
       });
     } else {
+      const candAncho = vecinas.flatMap((o) => [o.x - est.x, o.x + o.ancho - est.x, o.ancho]);
+      candAncho.push(envolvente.x + envolvente.ancho - est.x);
+      const candFondo = vecinas.flatMap((o) => [o.y - est.y, o.y + o.fondo - est.y, o.fondo]);
+      candFondo.push(envolvente.y + envolvente.fondo - est.y);
       updateEstancia(est.id, {
-        ancho: snap(Math.min(Math.max(p.x - est.x, 0.5), dims.ancho - est.x)),
-        fondo: snap(Math.min(Math.max(p.y - est.y, 0.5), dims.fondo - est.y)),
+        ancho: iman(snap(Math.min(Math.max(p.x - est.x, 0.5), dims.ancho - est.x)), candAncho),
+        fondo: iman(snap(Math.min(Math.max(p.y - est.y, 0.5), dims.fondo - est.y)), candFondo),
       });
     }
   };
