@@ -238,6 +238,29 @@ details summary {
 }
 .hueco-titulo .borrar { padding: 2px 7px; font-size: 11px; }
 
+/* ─── Asistente IA ──────────────────────────────────────────────────── */
+.asistente-intro { font-size: 12px; color: var(--tinta-suave); margin: 0 0 8px; }
+.asistente-deseo {
+  width: 100%; font-size: 13px; padding: 8px; border: 1px solid var(--borde);
+  border-radius: var(--radio-s); resize: vertical; font-family: inherit;
+}
+.asistente-acciones {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px;
+}
+.asistente-acciones .btn-primario { font-size: 13px; padding: 9px 16px; }
+.asistente-ajustes { margin-top: 10px; }
+.asistente-ajustes input {
+  width: 100%; padding: 7px 8px; border: 1px solid var(--borde);
+  border-radius: var(--radio-s); font-size: 13px; margin-top: 4px;
+}
+.asistente-nota { font-size: 11px; color: var(--tinta-suave); margin: 6px 0 0; }
+.asistente-error { font-size: 12px; color: var(--error); margin: 8px 0 0; }
+.asistente-respuesta {
+  margin-top: 10px; font-size: 13px; line-height: 1.55; color: var(--tinta);
+  white-space: pre-wrap; background: #f1f6f0; border: 1px solid #cfe0c3;
+  border-radius: var(--radio-s); padding: 10px 12px;
+}
+
 /* ─── Panel de cumplimiento ─────────────────────────────────────────── */
 .metricas { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .metricas td { padding: 5px 2px; border-bottom: 1px solid #efe9dd; }

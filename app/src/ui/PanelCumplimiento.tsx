@@ -1,5 +1,6 @@
 import type { Evaluacion, ResultadoRegla } from '../engine/cumplimiento';
 import type { NormativaMunicipal } from '../normativa/schema';
+import { Asistente } from './Asistente';
 import { Seccion } from './Seccion';
 
 const ICONO: Record<ResultadoRegla['nivel'], string> = {
@@ -89,6 +90,8 @@ export function PanelCumplimiento({
           </ul>
         </Seccion>
       )}
+
+      <Asistente normativa={normativa} />
     </aside>
   );
 }

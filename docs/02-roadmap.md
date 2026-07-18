@@ -87,6 +87,17 @@ de ser fácil.
       (`computo.edificabilidad`), sobrescribiendo el catálogo. Base del
       esquema ampliado de [docs/09](09-f1-plataforma-normativas.md).
 
+### Asistente de diseño con IA (ver [docs/10](10-asistente-ia.md))
+
+- [x] **IA.0 + IA.1**: asistente que, con la clave de API del usuario (BYOK,
+      guardada solo en el dispositivo), toma la normativa activa + el estado
+      del boceto + la prosa del usuario y devuelve sugerencias de diseño
+      ancladas en la normativa. Panel en el lateral de cumplimiento.
+- [ ] IA.2: subir PDF de normativa → `NormativaMunicipal` interpretada por
+      IA con citas, revisable.
+- [ ] IA.3: acciones aplicables (la IA propone cambios del boceto que el
+      usuario acepta con un clic).
+
 ## F1 — Multi-municipio + IA
 
 **Objetivo**: que funcione para cualquier municipio de España.
