@@ -40,6 +40,46 @@ export function posicionSolar(
   return { elevacion, azimut };
 }
 
+export interface OrtoOcaso {
+  /** Hora solar de amanecer y atardecer (12 = mediodía solar). */
+  amanecer: number;
+  atardecer: number;
+  horasDeSol: number;
+}
+
+/** Orto y ocaso (en hora solar) para una latitud y día del año. */
+export function ortoYOcaso(latitud: number, dia: number): OrtoOcaso {
+  const decl = 23.45 * Math.sin(RAD * (360 / 365) * (284 + dia));
+  const cosH0 = -Math.tan(RAD * latitud) * Math.tan(RAD * decl);
+  // Fuera de |1| habría sol de medianoche / noche polar (no ocurre en España).
+  const h0 = Math.acos(Math.min(1, Math.max(-1, cosH0))) / RAD / 15;
+  return { amanecer: 12 - h0, atardecer: 12 + h0, horasDeSol: 2 * h0 };
+}
+
+/**
+ * Conversión hora solar ↔ hora local oficial en España peninsular/Baleares:
+ * corrige la longitud geográfica (4 min por grado) y el huso (CET/CEST,
+ * con cambio de hora aproximado abril–octubre). Ignora la ecuación del
+ * tiempo (±15 min) — suficiente para uso orientativo.
+ */
+export function solarALocal(horaSolar: number, longitud: number, mes: number): number {
+  const huso = mes >= 4 && mes <= 10 ? 2 : 1;
+  return horaSolar - longitud / 15 + huso;
+}
+
+export function localASolar(horaLocal: number, longitud: number, mes: number): number {
+  const huso = mes >= 4 && mes <= 10 ? 2 : 1;
+  return horaLocal + longitud / 15 - huso;
+}
+
+/** Formatea una hora decimal como "HH:MM" (normalizada a 0–24). */
+export function formatoHora(h: number): string {
+  const norm = ((h % 24) + 24) % 24;
+  const horas = Math.floor(norm);
+  const minutos = Math.round((norm - horas) * 60);
+  return `${String(horas + (minutos === 60 ? 1 : 0)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`;
+}
+
 /**
  * Vector unitario (x, y, z) apuntando HACIA el sol en el sistema de la
  * escena 3D: x = este, y = arriba, z = sur (el plano usa norte arriba,

@@ -1,17 +1,33 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BoxGeometry, EdgesGeometry } from 'three';
+import {
+  BoxGeometry,
+  BufferGeometry,
+  EdgesGeometry,
+  Line,
+  LineBasicMaterial,
+  Vector3,
+} from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { PLANTAS, type PlantaId } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
 import { dimensionesParcela, envolventeEdificable } from '../engine/geometria';
-import { diaDelAnyo, posicionSolar, vectorSolar } from '../engine/soleamiento';
+import {
+  diaDelAnyo,
+  formatoHora,
+  localASolar,
+  ortoYOcaso,
+  posicionSolar,
+  solarALocal,
+  vectorSolar,
+} from '../engine/soleamiento';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { useStore } from '../state/store';
 import { murosDeEstancia } from './muros';
 
 const LAT_DEFECTO = 40.5;
+const LNG_DEFECTO = -3.7;
 const ALTURA_OJOS = 1.6;
 const SIN_MUROS = new Set(['piscina', 'terraza', 'porche']);
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -71,12 +87,12 @@ function ControlesInterior({ alturaOjos }: { alturaOjos: number }) {
 function Escena({
   normativa,
   mes,
-  hora,
+  horaSolar,
   conJaula,
 }: {
   normativa: NormativaMunicipal;
   mes: number;
-  hora: number;
+  horaSolar: number;
   conJaula: boolean;
 }) {
   const parcela = useStore((s) => s.proyecto.parcela);
@@ -87,10 +103,23 @@ function Escena({
   const envolvente = envolventeEdificable(parcela, normativa);
 
   const lat = normativa.ubicacion?.lat ?? LAT_DEFECTO;
-  const sol = posicionSolar(lat, diaDelAnyo(mes), hora);
+  const dia = diaDelAnyo(mes);
+  const sol = posicionSolar(lat, dia, horaSolar);
   const vSol = vectorSolar(sol);
   const deDia = sol.elevacion > 0;
   const radio = Math.max(dims.ancho, dims.fondo) * 1.5;
+
+  // Arco de la trayectoria solar del día (de orto a ocaso)
+  const arcoSolar = useMemo(() => {
+    const oo = ortoYOcaso(lat, dia);
+    const puntos: Vector3[] = [];
+    for (let h = oo.amanecer; h <= oo.atardecer; h += 0.25) {
+      const v = vectorSolar(posicionSolar(lat, dia, h));
+      puntos.push(new Vector3(v.x * radio, Math.max(0, v.y * radio), v.z * radio));
+    }
+    const geo = new BufferGeometry().setFromPoints(puntos);
+    return new Line(geo, new LineBasicMaterial({ color: '#f9a825', transparent: true, opacity: 0.8 }));
+  }, [lat, dia, radio]);
 
   const basePlanta = (id: PlantaId) =>
     id === 'sotano' ? -alturaPorPlanta : id === 'baja' ? 0 : alturaPorPlanta;
@@ -130,6 +159,13 @@ function Escena({
       <color attach="background" args={[deDia ? '#dcebf5' : '#1a2233']} />
       <ambientLight intensity={deDia ? 0.55 : 0.15} />
       <hemisphereLight intensity={deDia ? 0.35 : 0.1} color="#cfe4f7" groundColor="#7a8a6f" />
+      {conJaula && <primitive object={arcoSolar} />}
+      {conJaula && deDia && (
+        <mesh position={[vSol.x * radio, vSol.y * radio, vSol.z * radio]}>
+          <sphereGeometry args={[radio * 0.03, 16, 16]} />
+          <meshBasicMaterial color="#ffd54f" />
+        </mesh>
+      )}
       {deDia && (
         <directionalLight
           position={[vSol.x * radio, vSol.y * radio, vSol.z * radio]}
@@ -247,11 +283,27 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
 
   const [modo, setModo] = useState<Modo>('orbita');
   const [mes, setMes] = useState(6);
-  const [hora, setHora] = useState(12);
+  const [hora, setHora] = useState(14); // hora local oficial
+  const [reproduciendo, setReproduciendo] = useState(false);
 
   const dims = dimensionesParcela(parcela);
   const lat = normativa.ubicacion?.lat ?? LAT_DEFECTO;
-  const sol = posicionSolar(lat, diaDelAnyo(mes), hora);
+  const lng = normativa.ubicacion?.lng ?? LNG_DEFECTO;
+  const dia = diaDelAnyo(mes);
+  const horaSolar = localASolar(hora, lng, mes);
+  const sol = posicionSolar(lat, dia, horaSolar);
+  const oo = ortoYOcaso(lat, dia);
+  const amanecerLocal = solarALocal(oo.amanecer, lng, mes);
+  const atardecerLocal = solarALocal(oo.atardecer, lng, mes);
+
+  useEffect(() => {
+    if (!reproduciendo) return;
+    const t = setInterval(
+      () => setHora((h) => (h >= 23.75 ? 5 : Math.round((h + 0.25) * 4) / 4)),
+      120,
+    );
+    return () => clearInterval(t);
+  }, [reproduciendo]);
 
   const camaraOrbita: [number, number, number] = [
     dims.ancho * 0.9,
@@ -284,17 +336,26 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
           </button>
         </div>
         <label className="control-sol">
-          ☀️ {MESES[mes - 1]}
+          📅 {MESES[mes - 1]}
           <input type="range" min={1} max={12} value={mes} onChange={(e) => setMes(+e.target.value)} />
         </label>
         <label className="control-sol">
-          🕐 {hora.toFixed(1).replace('.0', '')}h
-          <input type="range" min={6} max={21.5} step={0.5} value={hora} onChange={(e) => setHora(+e.target.value)} />
+          🕐 {formatoHora(hora)}
+          <input type="range" min={5} max={23.75} step={0.25} value={hora} onChange={(e) => setHora(+e.target.value)} />
         </label>
+        <button
+          className={reproduciendo ? 'activa' : ''}
+          title="Animar el día completo"
+          onClick={() => setReproduciendo((r) => !r)}
+        >
+          {reproduciendo ? '⏸' : '▶ día'}
+        </button>
         <span className="dato-sol">
+          🌅 {formatoHora(amanecerLocal)} · 🌇 {formatoHora(atardecerLocal)} ·
+          ☀️ {oo.horasDeSol.toFixed(1)} h de sol
           {sol.elevacion > 0
-            ? `elevación ${sol.elevacion.toFixed(0)}° · azimut ${sol.azimut.toFixed(0)}°`
-            : 'noche'}
+            ? ` · elevación ${sol.elevacion.toFixed(0)}° · azimut ${sol.azimut.toFixed(0)}°`
+            : ' · 🌙 noche'}
         </span>
       </div>
       <Canvas
@@ -302,7 +363,7 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
         camera={{ position: modo === 'orbita' ? camaraOrbita : camaraInterior, fov: modo === 'orbita' ? 45 : 70 }}
         shadows
       >
-        <Escena normativa={normativa} mes={mes} hora={hora} conJaula={modo === 'orbita'} />
+        <Escena normativa={normativa} mes={mes} horaSolar={horaSolar} conJaula={modo === 'orbita'} />
         {modo === 'orbita' ? (
           <ControlesOrbita objetivo={[0, alturaPorPlanta / 2, 0]} />
         ) : (
@@ -311,7 +372,7 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
       </Canvas>
       <div className="vista3d-leyenda">
         {modo === 'orbita'
-          ? `🟩 jaula = envolvente edificable hasta ${normativa.alturaMaxima} m · 🔺 rojo = norte · arrastra para orbitar · rueda para zoom`
+          ? `🟩 jaula = envolvente edificable hasta ${normativa.alturaMaxima} m · 🟡 arco = trayectoria solar del día · 🔺 rojo = norte · hora local de ${normativa.municipio}`
           : '🚶 Haz clic en la escena para capturar el ratón · WASD/flechas para andar · Esc para soltar · caminas por la ' +
             (plantaActiva === 'sotano' ? 'planta sótano' : plantaActiva === 'baja' ? 'planta baja' : 'primera planta')}
       </div>

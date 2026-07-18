@@ -40,6 +40,13 @@ de ser fácil.
 - [x] **Orientación solar**: sol calculado por latitud del municipio, mes y
       hora (declinación + ángulo horario), con sombras en tiempo real y
       controles de mes/hora en la vista 3D. Flecha roja = norte.
+- [x] **Soleamiento completo**: hora en tiempo local oficial (corrección de
+      longitud + huso CET/CEST), amanecer/atardecer y horas de sol del día
+      por coordenadas del municipio, arco de la trayectoria solar visible
+      en 3D y animación del día completo (▶).
+- [ ] Snapping magnético entre estancias y pared compartida (ver
+      [exploración del editor de muros](08-editor-muros.md)).
+- [ ] Estancias poligonales (plantas en L) — fase 2 de la exploración.
 - [x] **Recomendaciones bioclimáticas**: estancia habitable sin ventanas o
       con < 10 % de superficie acristalada, salón con ventanas solo al
       norte, exceso de vidrio al oeste (sobrecalentamiento).
