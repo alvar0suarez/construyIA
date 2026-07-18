@@ -28,6 +28,10 @@ import { murosDeEstancia } from './muros';
 
 const LAT_DEFECTO = 40.5;
 const LNG_DEFECTO = -3.7;
+
+/** Pantallas táctiles (móvil/tablet): render más ligero. */
+const TACTIL =
+  typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 const ALTURA_OJOS = 1.6;
 const SIN_MUROS = new Set(['piscina', 'terraza', 'porche']);
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -35,14 +39,21 @@ const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'O
 type Modo = 'orbita' | 'interior';
 
 function ControlesOrbita({ objetivo }: { objetivo: [number, number, number] }) {
-  const { camera, gl } = useThree();
+  const { camera, gl, invalidate } = useThree();
   useEffect(() => {
     const c = new OrbitControls(camera, gl.domElement);
     c.target.set(...objetivo);
     c.maxPolarAngle = Math.PI / 2 - 0.02;
+    c.enableDamping = false;
+    // Con frameloop "demand" solo se renderiza cuando algo cambia.
+    const alCambiar = () => invalidate();
+    c.addEventListener('change', alCambiar);
     c.update();
-    return () => c.dispose();
-  }, [camera, gl, objetivo]);
+    return () => {
+      c.removeEventListener('change', alCambiar);
+      c.dispose();
+    };
+  }, [camera, gl, objetivo, invalidate]);
   return null;
 }
 
@@ -423,18 +434,18 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
       <div className="vista3d-toolbar">
         <div className="selector-vista">
           <button className={modo === 'orbita' ? 'activa' : ''} onClick={() => setModo('orbita')}>
-            🛰 Órbita
+            Órbita
           </button>
           <button className={modo === 'interior' ? 'activa' : ''} onClick={() => setModo('interior')}>
-            🚶 Interior
+            Interior
           </button>
         </div>
         <label className="control-sol">
-          📅 {MESES[mes - 1]}
+          {MESES[mes - 1]}
           <input type="range" min={1} max={12} value={mes} onChange={(e) => setMes(+e.target.value)} />
         </label>
         <label className="control-sol">
-          🕐 {formatoHora(hora)}
+          {formatoHora(hora)}
           <input type="range" min={5} max={23.75} step={0.25} value={hora} onChange={(e) => setHora(+e.target.value)} />
         </label>
         <button
@@ -442,7 +453,7 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
           title="Animar el día completo"
           onClick={() => setReproduciendo((r) => !r)}
         >
-          {reproduciendo ? '⏸' : '▶ día'}
+          {reproduciendo ? '⏸ parar' : '▶ día'}
         </button>
         <span className="dato-sol">
           🌅 {formatoHora(amanecerLocal)} · 🌇 {formatoHora(atardecerLocal)} ·
@@ -455,7 +466,10 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
       <Canvas
         key={modo} // reinicia la cámara al cambiar de modo
         camera={{ position: modo === 'orbita' ? camaraOrbita : camaraInterior, fov: modo === 'orbita' ? 45 : 70 }}
-        shadows
+        shadows={!TACTIL}
+        dpr={[1, TACTIL ? 1.5 : 2]}
+        gl={{ antialias: !TACTIL, powerPreference: 'high-performance' }}
+        frameloop={modo === 'interior' || reproduciendo ? 'always' : 'demand'}
       >
         <Escena normativa={normativa} mes={mes} horaSolar={horaSolar} conJaula={modo === 'orbita'} />
         {modo === 'orbita' ? (
@@ -467,8 +481,8 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
       {modo === 'interior' && <Joystick valor={joystick} />}
       <div className="vista3d-leyenda">
         {modo === 'orbita'
-          ? `🟩 jaula = envolvente edificable hasta ${normativa.alturaMaxima} m · 🟡 arco = trayectoria solar del día · 🔺 rojo = norte · hora local de ${normativa.municipio}`
-          : '🚶 Haz clic en la escena para capturar el ratón · WASD/flechas para andar · Esc para soltar · caminas por la ' +
+          ? `Jaula verde: envolvente edificable hasta ${normativa.alturaMaxima} m · arco amarillo: trayectoria solar · cono rojo: norte · hora local de ${normativa.municipio}`
+          : 'Haz clic para capturar el ratón (WASD/flechas para andar, Esc para soltar) o usa el joystick táctil · caminas por la ' +
             (plantaActiva === 'sotano' ? 'planta sótano' : plantaActiva === 'baja' ? 'planta baja' : 'primera planta')}
       </div>
     </div>

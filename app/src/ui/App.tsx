@@ -79,13 +79,13 @@ export function App() {
                 className={vista === 'plano' ? 'activa' : ''}
                 onClick={() => setVista('plano')}
               >
-                📐 Plano 2D
+                Plano 2D
               </button>
               <button
                 className={vista === '3d' ? 'activa' : ''}
                 onClick={() => setVista('3d')}
               >
-                🧊 Vista 3D
+                Vista 3D
               </button>
             </div>
             {vista === 'plano' ? (
