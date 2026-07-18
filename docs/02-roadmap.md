@@ -70,6 +70,11 @@ de ser fácil.
 - [x] Colisiones en el paseo interior: los muros bloquean el paso, las
       puertas dejan pasar (también en muros fusionados) y Shift los
       atraviesa.
+- [x] Exportar como imagen: el plano 2D (SVG → PNG con estilos embebidos)
+      y la vista 3D actual, con botones de descarga.
+- [x] Guías de distancia a los cuatro linderos al seleccionar una estancia.
+- [x] PWA instalable: manifest, iconos SVG/PNG y theme-color («añadir a
+      pantalla de inicio» en móvil). Pendiente: service worker offline.
 
 ## F1 — Multi-municipio + IA
 

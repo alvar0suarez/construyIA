@@ -1,0 +1,16 @@
+{
+  "name": "ConstruyIA — Diseña tu casa dentro de la normativa",
+  "short_name": "ConstruyIA",
+  "description": "Boceta tu vivienda sobre tu parcela real con validación urbanística en tiempo real, vista 3D con sol real y paseo interior.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f2ea",
+  "theme_color": "#14342b",
+  "icons": [
+    { "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

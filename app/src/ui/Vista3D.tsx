@@ -441,6 +441,7 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
   const [hora, setHora] = useState(14); // hora local oficial
   const [reproduciendo, setReproduciendo] = useState(false);
   const joystick = useRef({ x: 0, y: 0 });
+  const contenedor = useRef<HTMLDivElement>(null);
 
   const dims = dimensionesParcela(parcela);
   const lat = normativa.ubicacion?.lat ?? LAT_DEFECTO;
@@ -532,7 +533,7 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
     : [0, baseActiva + ALTURA_OJOS, 0];
 
   return (
-    <div className="vista3d">
+    <div className="vista3d" ref={contenedor}>
       <div className="vista3d-toolbar">
         <div className="selector-vista">
           <button className={modo === 'orbita' ? 'activa' : ''} onClick={() => setModo('orbita')}>
@@ -557,6 +558,19 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
         >
           {reproduciendo ? '⏸ parar' : '▶ día'}
         </button>
+        <button
+          title="Descargar la vista actual como imagen PNG"
+          onClick={() => {
+            const canvas = contenedor.current?.querySelector('canvas');
+            if (!canvas) return;
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = `vista-3d-${modo}.png`;
+            a.click();
+          }}
+        >
+          Descargar PNG
+        </button>
         <span className="dato-sol">
           🌅 {formatoHora(amanecerLocal)} · 🌇 {formatoHora(atardecerLocal)} ·
           ☀️ {oo.horasDeSol.toFixed(1)} h de sol
@@ -570,7 +584,11 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
         camera={{ position: modo === 'orbita' ? camaraOrbita : camaraInterior, fov: modo === 'orbita' ? 45 : 70 }}
         shadows={!TACTIL}
         dpr={[1, TACTIL ? 1.5 : 2]}
-        gl={{ antialias: !TACTIL, powerPreference: 'high-performance' }}
+        gl={{
+          antialias: !TACTIL,
+          powerPreference: 'high-performance',
+          preserveDrawingBuffer: true, // para capturar la vista como imagen
+        }}
         frameloop={modo === 'interior' || reproduciendo ? 'always' : 'demand'}
       >
         <Escena normativa={normativa} mes={mes} horaSolar={horaSolar} conJaula={modo === 'orbita'} />

@@ -12,6 +12,61 @@ import { useStore } from '../state/store';
 
 const SNAP = 0.1; // metros
 
+/**
+ * Estilos que viajan con el SVG al exportarlo a imagen (las clases del CSS
+ * de la app no existen fuera del documento). Mantener en sintonía con
+ * estilos.css.
+ */
+const ESTILOS_EXPORT = `
+  text { font-family: system-ui, sans-serif; }
+  .svg-parcela { fill: #edf3e6; stroke: #7a8a6f; stroke-width: 0.15; }
+  .svg-grid { stroke: #dde4d4; stroke-width: 0.02; }
+  .svg-retranqueo { fill: rgba(189, 68, 54, 0.06); }
+  .svg-envolvente { fill: none; stroke: #2e7d5b; stroke-width: 0.09; stroke-dasharray: 0.4 0.25; }
+  .svg-cota { font-size: 0.7px; fill: #bd4436; text-anchor: middle; opacity: 0.7; }
+  .svg-frente { font-size: 0.9px; fill: #68705f; text-anchor: middle; }
+  .svg-fantasma { fill: none; stroke: #b9b4aa; stroke-width: 0.06; stroke-dasharray: 0.2 0.2; }
+  .svg-estancia { stroke: #565045; stroke-width: 0.06; opacity: 0.94; }
+  .svg-estancia.seleccionada { stroke: #565045; stroke-width: 0.06; }
+  .svg-etiqueta { font-size: 0.55px; text-anchor: middle; fill: #2f2c25; }
+  .svg-etiqueta-area { font-size: 0.5px; fill: #68705f; }
+  .svg-asa { display: none; }
+  .svg-guia { display: none; }
+  .svg-hueco.ventana { stroke: #1e88e5; stroke-width: 0.18; }
+  .svg-hueco.puerta { stroke: #8d6e63; stroke-width: 0.2; }
+`;
+
+/** Descarga el SVG del plano como PNG a ~2000 px de ancho. */
+function descargarPlanoPNG(svg: SVGSVGElement, nombreFichero: string) {
+  const clon = svg.cloneNode(true) as SVGSVGElement;
+  const estilo = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  estilo.textContent = ESTILOS_EXPORT;
+  clon.insertBefore(estilo, clon.firstChild);
+  const [, , vw, vh] = (clon.getAttribute('viewBox') ?? '0 0 1 1').split(' ').map(Number);
+  const xml = new XMLSerializer().serializeToString(clon);
+  const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml' }));
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2000;
+    canvas.height = Math.round((2000 * vh) / vw);
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nombreFichero;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }, 'image/png');
+  };
+  img.src = url;
+}
+
 type Arrastre =
   | { modo: 'mover'; id: string; dx: number; dy: number }
   | { modo: 'redimensionar'; id: string }
@@ -225,11 +280,23 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
           {plantaNombre} · parcela {dims.ancho.toFixed(1)} × {dims.fondo.toFixed(1)} m
           {plantaActiva === 'sotano' && ' · bajo rasante (no computa edificabilidad)'}
         </span>
-        {zoom && zoom.z > 1.01 && (
-          <button className="reencuadrar" onClick={() => setZoom(null)}>
-            ⤢ {Math.round(zoom.z * 100)} % · encajar
+        <span className="plano-acciones">
+          {zoom && zoom.z > 1.01 && (
+            <button className="reencuadrar" onClick={() => setZoom(null)}>
+              ⤢ {Math.round(zoom.z * 100)} % · encajar
+            </button>
+          )}
+          <button
+            className="reencuadrar"
+            title="Descargar el plano como imagen PNG"
+            onClick={() =>
+              svgRef.current &&
+              descargarPlanoPNG(svgRef.current, `plano-${plantaActiva}.png`)
+            }
+          >
+            Descargar PNG
           </button>
-        )}
+        </span>
       </div>
       <svg
         ref={svgRef}
@@ -296,6 +363,32 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
         >
           🚗 calle (frente)
         </text>
+
+        {/* Guías de distancia a linderos de la estancia seleccionada */}
+        {(() => {
+          const sel = estancias.find((e) => e.id === seleccionId);
+          if (!sel) return null;
+          const cx = sel.x + sel.ancho / 2;
+          const cy = sel.y + sel.fondo / 2;
+          const guias = [
+            { x1: 0, y1: cy, x2: sel.x, y2: cy, d: sel.x },
+            { x1: sel.x + sel.ancho, y1: cy, x2: dims.ancho, y2: cy, d: dims.ancho - sel.x - sel.ancho },
+            { x1: cx, y1: 0, x2: cx, y2: sel.y, d: sel.y },
+            { x1: cx, y1: sel.y + sel.fondo, x2: cx, y2: dims.fondo, d: dims.fondo - sel.y - sel.fondo },
+          ].filter((g) => g.d > 0.05);
+          return (
+            <g className="svg-guia">
+              {guias.map((g, i) => (
+                <g key={i}>
+                  <line x1={g.x1} y1={g.y1} x2={g.x2} y2={g.y2} />
+                  <text x={(g.x1 + g.x2) / 2} y={(g.y1 + g.y2) / 2 - 0.25}>
+                    {g.d.toFixed(1)} m
+                  </text>
+                </g>
+              ))}
+            </g>
+          );
+        })()}
 
         {/* Estancias de otras plantas, como referencia */}
         {fantasmas.map((e) => (

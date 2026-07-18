@@ -190,6 +190,14 @@ details summary {
 }
 .svg-etiqueta-area { font-size: 0.5px; fill: #68705f; }
 .svg-asa { fill: #1565c0; cursor: nwse-resize; }
+.svg-guia line {
+  stroke: #1565c0; stroke-width: 0.05; stroke-dasharray: 0.25 0.2;
+  pointer-events: none;
+}
+.svg-guia text {
+  font-size: 0.6px; fill: #1565c0; text-anchor: middle; pointer-events: none;
+  font-weight: 600;
+}
 .svg-hueco { stroke-linecap: butt; cursor: ew-resize; }
 .svg-hueco.ventana { stroke: #1e88e5; stroke-width: 0.18; }
 .svg-hueco.puerta { stroke: #8d6e63; stroke-width: 0.2; }
