@@ -56,6 +56,15 @@ export interface NormativaMunicipal {
   plantasMaximas: number;
   /** Retranqueo mínimo de la piscina a todos los linderos, en metros. */
   retranqueoPiscina?: number;
+  /**
+   * Reglas de cómputo específicas de esta ordenanza. Sobrescriben los
+   * coeficientes por defecto del catálogo de estancias (uno de los puntos
+   * donde más varían los municipios: qué computa edificabilidad y cuánto).
+   * `edificabilidad` es un mapa `tipoEstancia → coeficiente 0..1`.
+   */
+  computo?: {
+    edificabilidad?: Record<string, number>;
+  };
   /** Condiciones (estéticas u otras) aún no modeladas de forma estructurada. */
   notas?: string;
   /** Coordenadas del municipio, para el mapa de cobertura. */

@@ -96,8 +96,20 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     p.plantas.baja.push({ id: 'b', tipo: 'salon', x: 5, y: 5, ancho: 10, fondo: 10 }); // 100 m²
     p.plantas.baja.push({ id: 'p', tipo: 'porche', x: 5, y: 15, ancho: 4, fondo: 5 }); // 20 m² → 12
     const ev = evaluar(p, galapagarU3);
+    // Galapagar sobreescribe el porche a 0,6: 100 + 20·0,6 = 112
     expect(ev.metricas.superficieComputable).toBeCloseTo(112);
     expect(ev.normativa.find((r) => r.regla === 'edificabilidad')!.nivel).toBe('ok');
+  });
+
+  it('el coeficiente de edificabilidad es parametrizable por normativa', () => {
+    const p = proyectoBase();
+    p.plantas.baja.push({ id: 'p', tipo: 'porche', x: 5, y: 5, ancho: 4, fondo: 5 }); // 20 m²
+    // Sin override: el porche usa el 0,5 genérico del catálogo → 10 m²
+    const generica = { ...galapagarU3, computo: undefined };
+    expect(evaluar(p, generica).metricas.superficieComputable).toBeCloseTo(10);
+    // Con override a 1: 20 m²
+    const computaTodo = { ...galapagarU3, computo: { edificabilidad: { porche: 1 } } };
+    expect(evaluar(p, computaTodo).metricas.superficieComputable).toBeCloseTo(20);
   });
 
   it('detecta exceso de edificabilidad', () => {

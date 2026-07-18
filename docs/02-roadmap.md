@@ -77,6 +77,12 @@ de ser fácil.
       pantalla de inicio» en móvil) + service worker con caché
       stale-while-revalidate (funciona sin conexión una vez visitada).
 
+### F1.1 — Cómputo parametrizable (primer paso de la F1, en marcha)
+
+- [x] Coeficiente de edificabilidad configurable por normativa
+      (`computo.edificabilidad`), sobrescribiendo el catálogo. Base del
+      esquema ampliado de [docs/09](09-f1-plataforma-normativas.md).
+
 ## F1 — Multi-municipio + IA
 
 **Objetivo**: que funcione para cualquier municipio de España.
