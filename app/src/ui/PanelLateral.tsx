@@ -5,6 +5,7 @@ import type { NormativaMunicipal } from '../normativa/schema';
 import { NORMATIVAS, PERSONALIZADA_ID } from '../normativa/registry';
 import { useStore } from '../state/store';
 import { InspectorEstancia } from './InspectorEstancia';
+import { Seccion } from './Seccion';
 
 const LADOS: { id: Lado; nombre: string }[] = [
   { id: 'norte', nombre: 'Norte (arriba)' },
@@ -55,8 +56,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
 
   return (
     <aside className="panel-lateral">
-      <section>
-        <h3>Normativa</h3>
+      <Seccion titulo="Normativa" abiertaEnMovil>
         <select
           value={normativaId}
           onChange={(e) => setNormativaId(e.target.value)}
@@ -103,10 +103,9 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
             )}
           </details>
         )}
-      </section>
+      </Seccion>
 
-      <section>
-        <h3>Parcela</h3>
+      <Seccion titulo="Parcela">
         <div className="grid-normativa">
           <label>Lado norte (m)<input {...numero(parcela.norte, (n) => setParcela({ norte: n }))} /></label>
           <label>Lado sur (m)<input {...numero(parcela.sur, (n) => setParcela({ sur: n }))} /></label>
@@ -153,10 +152,9 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
             </label>
           )}
         </div>
-      </section>
+      </Seccion>
 
-      <section>
-        <h3>Planta</h3>
+      <Seccion titulo="Planta" abiertaEnMovil>
         <div className="selector-planta">
           {PLANTAS.map((p) => (
             <button
@@ -168,12 +166,11 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
             </button>
           ))}
         </div>
-      </section>
+      </Seccion>
 
       <InspectorEstancia />
 
-      <section>
-        <h3>Añadir estancia</h3>
+      <Seccion titulo="Añadir estancia" abiertaEnMovil>
         <div className="paleta">
           {CATALOGO.map((t) => (
             <button
@@ -186,7 +183,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
             </button>
           ))}
         </div>
-      </section>
+      </Seccion>
     </aside>
   );
 }

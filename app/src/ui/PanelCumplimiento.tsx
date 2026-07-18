@@ -1,5 +1,6 @@
 import type { Evaluacion, ResultadoRegla } from '../engine/cumplimiento';
 import type { NormativaMunicipal } from '../normativa/schema';
+import { Seccion } from './Seccion';
 
 const ICONO: Record<ResultadoRegla['nivel'], string> = {
   ok: '✅',
@@ -40,8 +41,7 @@ export function PanelCumplimiento({
 
   return (
     <aside className="panel-cumplimiento">
-      <section>
-        <h3>Resumen</h3>
+      <Seccion titulo="Resumen" abiertaEnMovil>
         <table className="metricas">
           <tbody>
             <tr><td>Parcela</td><td>{f(m.areaParcela, 0)} m²</td></tr>
@@ -60,31 +60,34 @@ export function PanelCumplimiento({
             <tr><td>Dormitorios / baños</td><td>{m.numDormitorios} / {m.numBanyos}</td></tr>
           </tbody>
         </table>
-      </section>
+      </Seccion>
 
-      <section>
-        <h3>
-          Normativa{' '}
-          <span className={errores === 0 ? 'chip ok' : 'chip error'}>
-            {errores === 0 ? 'CUMPLE' : `${errores} incumplimiento(s)`}
-          </span>
-        </h3>
+      <Seccion
+        abiertaEnMovil
+        titulo={
+          <>
+            Normativa{' '}
+            <span className={errores === 0 ? 'chip ok' : 'chip error'}>
+              {errores === 0 ? 'CUMPLE' : `${errores} incumplimiento(s)`}
+            </span>
+          </>
+        }
+      >
         <ul className="lista-reglas">
           {reglas.map((r, i) => (
             <Fila key={i} r={r} />
           ))}
         </ul>
-      </section>
+      </Seccion>
 
       {recomendaciones.length > 0 && (
-        <section>
-          <h3>Recomendaciones</h3>
+        <Seccion titulo="Recomendaciones">
           <ul className="lista-reglas">
             {recomendaciones.map((r, i) => (
               <Fila key={i} r={r} />
             ))}
           </ul>
-        </section>
+        </Seccion>
       )}
     </aside>
   );

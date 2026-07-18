@@ -64,8 +64,12 @@ de ser fácil.
 - [x] Galapagar por grados: RU3 (La Navata) y RU4.
 - [x] Rendimiento del arrastre en móvil: coalescencia de eventos con
       requestAnimationFrame y evaluación de cumplimiento diferida.
-- [ ] UX móvil específica: paneles plegables, botones más grandes y gestos
-      (pellizcar para zoom en el plano).
+- [x] UX móvil: paneles plegables en pantallas pequeñas, botones táctiles
+      más grandes, pellizcar para zoom + paneo en el plano (y rueda en
+      escritorio) con botón de reencuadre.
+- [x] Colisiones en el paseo interior: los muros bloquean el paso, las
+      puertas dejan pasar (también en muros fusionados) y Shift los
+      atraviesa.
 
 ## F1 — Multi-municipio + IA
 

@@ -33,6 +33,11 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [arrastre, setArrastre] = useState<Arrastre | null>(null);
+
+  // Zoom y encuadre: pellizco con dos dedos, rueda en escritorio.
+  const [zoom, setZoom] = useState<{ z: number; cx: number; cy: number } | null>(null);
+  const dedos = useRef(new Map<number, { x: number; y: number }>());
+  const pinchaInicial = useRef<{ z: number; cx: number; cy: number; dist: number; mx: number; my: number } | null>(null);
   // Coalescencia de pointermove con requestAnimationFrame: en móviles los
   // eventos llegan más rápido de lo que renderiza React y el arrastre se
   // atasca; aplicamos solo la última posición una vez por frame.
@@ -41,6 +46,67 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
 
   const dims = dimensionesParcela(parcela);
   const envolvente = envolventeEdificable(parcela, normativa);
+
+  const vb0 = { w: dims.ancho + 4, h: dims.fondo + 4 };
+  const z = zoom?.z ?? 1;
+  const centro = zoom ?? { z: 1, cx: dims.ancho / 2, cy: dims.fondo / 2 };
+  const vw = vb0.w / z;
+  const vh = vb0.h / z;
+  const viewBox = `${centro.cx - vw / 2} ${centro.cy - vh / 2} ${vw} ${vh}`;
+
+  /** Escala aproximada px/metro del svg en pantalla (para el paneo táctil). */
+  const pxPorMetro = () => {
+    const r = svgRef.current?.getBoundingClientRect();
+    if (!r) return 20;
+    return Math.min(r.width / vw, r.height / vh);
+  };
+
+  const onPinchDown = (e: React.PointerEvent) => {
+    dedos.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.current.size === 2) {
+      setArrastre(null); // dos dedos = zoom/paneo, no arrastre de estancia
+      const [a, b] = [...dedos.current.values()];
+      pinchaInicial.current = {
+        ...centro,
+        z,
+        dist: Math.hypot(a.x - b.x, a.y - b.y),
+        mx: (a.x + b.x) / 2,
+        my: (a.y + b.y) / 2,
+      };
+    }
+  };
+  const onPinchMove = (e: React.PointerEvent) => {
+    if (!dedos.current.has(e.pointerId)) return;
+    dedos.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const ini = pinchaInicial.current;
+    if (dedos.current.size !== 2 || !ini) return;
+    const [a, b] = [...dedos.current.values()];
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    const nuevoZ = Math.min(8, Math.max(1, (ini.z * dist) / Math.max(1, ini.dist)));
+    const escala = pxPorMetro();
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    setZoom({
+      z: nuevoZ,
+      cx: ini.cx - (mx - ini.mx) / escala,
+      cy: ini.cy - (my - ini.my) / escala,
+    });
+  };
+  const onPinchUp = (e: React.PointerEvent) => {
+    dedos.current.delete(e.pointerId);
+    if (dedos.current.size < 2) pinchaInicial.current = null;
+  };
+
+  const onRueda = (e: React.WheelEvent) => {
+    const p = aMetros(e as unknown as React.PointerEvent);
+    const nuevoZ = Math.min(8, Math.max(1, z * Math.exp(-e.deltaY * 0.0015)));
+    if (nuevoZ === z) return;
+    setZoom({
+      z: nuevoZ,
+      cx: p.x + (centro.cx - p.x) * (z / nuevoZ),
+      cy: p.y + (centro.cy - p.y) * (z / nuevoZ),
+    });
+  };
   const retranqueos = retranqueoPorLado(parcela.frente, normativa.retranqueos);
   const estancias = plantas[plantaActiva] ?? [];
   const fantasmas: Estancia[] = PLANTAS.filter(
@@ -155,13 +221,25 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
   return (
     <div className="plano-contenedor">
       <div className="plano-titulo">
-        {plantaNombre} · parcela {dims.ancho.toFixed(1)} × {dims.fondo.toFixed(1)} m
-        {plantaActiva === 'sotano' && ' · bajo rasante (no computa edificabilidad)'}
+        <span>
+          {plantaNombre} · parcela {dims.ancho.toFixed(1)} × {dims.fondo.toFixed(1)} m
+          {plantaActiva === 'sotano' && ' · bajo rasante (no computa edificabilidad)'}
+        </span>
+        {zoom && zoom.z > 1.01 && (
+          <button className="reencuadrar" onClick={() => setZoom(null)}>
+            ⤢ {Math.round(zoom.z * 100)} % · encajar
+          </button>
+        )}
       </div>
       <svg
         ref={svgRef}
         className="plano"
-        viewBox={`-2 -2 ${dims.ancho + 4} ${dims.fondo + 4}`}
+        viewBox={viewBox}
+        onWheel={onRueda}
+        onPointerDownCapture={onPinchDown}
+        onPointerMoveCapture={onPinchMove}
+        onPointerUpCapture={onPinchUp}
+        onPointerCancelCapture={onPinchUp}
         onPointerMove={onMover}
         onPointerUp={() => setArrastre(null)}
         onPointerLeave={() => setArrastre(null)}
