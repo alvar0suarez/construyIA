@@ -21,7 +21,8 @@ repositorio, útil para comparar parcelas y bocetar.
 - [x] Retranqueo de piscina a linderos como parámetro opcional de normativa.
 - [x] CI en GitHub Actions (tests + build).
 - [ ] Parcelas no rectangulares (polígono libre de N vértices).
-- [ ] Despliegue automático (GitHub Pages) para compartir por URL.
+- [x] Despliegue automático (GitHub Pages) para compartir por URL (workflow
+      listo; se activa al hacer merge a `main`).
 - [ ] Cotejo sistemático de Galapagar U3 contra las NNSS para pasarla a `contrastada`.
 
 ## F0.5 — Editor potente (entre el MVP y el multi-municipio)
@@ -29,20 +30,24 @@ repositorio, útil para comparar parcelas y bocetar.
 **Objetivo**: que la herramienta de diseño "se sienta profesional" sin dejar
 de ser fácil.
 
-- [ ] **Huecos**: puertas y ventanas colocables en las paredes de cada
-      estancia (posición, ancho, alto de antepecho), visibles en 2D y 3D.
-- [ ] **Vista interior en primera persona**: caminar por dentro de la casa
-      (three.js PointerLock en escritorio, joystick virtual en móvil), ver
-      la luz que entra por las ventanas colocadas.
-- [ ] **Orientación solar**: posición del sol según latitud/hora/estación,
-      sombras arrojadas en la parcela y dentro de la vivienda.
-- [ ] **Recomendaciones bioclimáticas**: avisos tipo "el salón orientado al
-      norte recibirá poca luz", "demasiada superficie acristalada al oeste →
-      sobrecalentamiento en verano y más gasto en climatización", ratio de
-      huecos por orientación.
-- [ ] Muros con grosor real y estancias que comparten pared (adyacencias
-      para las recomendaciones de distribución de la app original).
-- [ ] Deshacer/rehacer, duplicar estancia, alinear y distribuir.
+- [x] **Huecos**: puertas y ventanas colocables en las paredes de cada
+      estancia (pared, posición, ancho, alto, antepecho), editables en el
+      plano 2D (arrastre sobre la pared) y en el inspector, con agujeros
+      reales y cristales en el 3D.
+- [x] **Vista interior en primera persona**: clic para capturar el ratón,
+      WASD/flechas para caminar por la planta activa, con la luz entrando
+      por los huecos. (Pendiente: joystick virtual para móvil.)
+- [x] **Orientación solar**: sol calculado por latitud del municipio, mes y
+      hora (declinación + ángulo horario), con sombras en tiempo real y
+      controles de mes/hora en la vista 3D. Flecha roja = norte.
+- [x] **Recomendaciones bioclimáticas**: estancia habitable sin ventanas o
+      con < 10 % de superficie acristalada, salón con ventanas solo al
+      norte, exceso de vidrio al oeste (sobrecalentamiento).
+- [x] Deshacer/rehacer (Ctrl+Z / Ctrl+Y, historial de 50 pasos).
+- [ ] Muros con grosor real compartidos entre estancias (adyacencias para
+      las recomendaciones de distribución de la app original).
+- [ ] Duplicar estancia, alinear y distribuir.
+- [ ] Joystick virtual y controles táctiles para la vista interior en móvil.
 
 ## F1 — Multi-municipio + IA
 

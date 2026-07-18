@@ -14,16 +14,22 @@ const SNAP = 0.1; // metros
 
 type Arrastre =
   | { modo: 'mover'; id: string; dx: number; dy: number }
-  | { modo: 'redimensionar'; id: string };
+  | { modo: 'redimensionar'; id: string }
+  | { modo: 'mover-hueco'; estanciaId: string; huecoId: string };
 
 export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
   const parcela = useStore((s) => s.proyecto.parcela);
   const plantas = useStore((s) => s.proyecto.plantas);
   const plantaActiva = useStore((s) => s.plantaActiva);
   const seleccionId = useStore((s) => s.seleccionId);
+  const seleccionHuecoId = useStore((s) => s.seleccionHuecoId);
   const setSeleccion = useStore((s) => s.setSeleccion);
+  const setSeleccionHueco = useStore((s) => s.setSeleccionHueco);
   const updateEstancia = useStore((s) => s.updateEstancia);
   const removeEstancia = useStore((s) => s.removeEstancia);
+  const updateHueco = useStore((s) => s.updateHueco);
+  const removeHueco = useStore((s) => s.removeHueco);
+  const marcarHistoria = useStore((s) => s.marcarHistoria);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [arrastre, setArrastre] = useState<Arrastre | null>(null);
@@ -40,15 +46,18 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
     const onTecla = (e: KeyboardEvent) => {
       if (
         (e.key === 'Delete' || e.key === 'Backspace') &&
-        seleccionId &&
         !(e.target instanceof HTMLInputElement)
       ) {
-        removeEstancia(seleccionId);
+        if (seleccionHuecoId && seleccionId) {
+          removeHueco(seleccionId, seleccionHuecoId);
+        } else if (seleccionId) {
+          removeEstancia(seleccionId);
+        }
       }
     };
     window.addEventListener('keydown', onTecla);
     return () => window.removeEventListener('keydown', onTecla);
-  }, [seleccionId, removeEstancia]);
+  }, [seleccionId, seleccionHuecoId, removeEstancia, removeHueco]);
 
   /** Convierte coordenadas de puntero a metros del plano. */
   const aMetros = (e: React.PointerEvent): { x: number; y: number } => {
@@ -63,6 +72,20 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
   const onMover = (e: React.PointerEvent) => {
     if (!arrastre) return;
     const p = aMetros(e);
+    if (arrastre.modo === 'mover-hueco') {
+      const est = estancias.find((x) => x.id === arrastre.estanciaId);
+      const hueco = est?.huecos?.find((h) => h.id === arrastre.huecoId);
+      if (!est || !hueco) return;
+      const horizontal = hueco.lado === 'norte' || hueco.lado === 'sur';
+      const largo = horizontal ? est.ancho : est.fondo;
+      const coord = horizontal ? p.x - est.x : p.y - est.y;
+      updateHueco(est.id, hueco.id, {
+        offset: snap(
+          Math.min(Math.max(coord - hueco.ancho / 2, 0), Math.max(0, largo - hueco.ancho)),
+        ),
+      });
+      return;
+    }
     const est = estancias.find((x) => x.id === arrastre.id);
     if (!est) return;
     if (arrastre.modo === 'mover') {
@@ -183,6 +206,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
                 onPointerDown={(ev) => {
                   ev.stopPropagation();
                   setSeleccion(e.id);
+                  marcarHistoria();
                   const p = aMetros(ev);
                   setArrastre({ modo: 'mover', id: e.id, dx: p.x - e.x, dy: p.y - e.y });
                 }}
@@ -209,10 +233,45 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
                   className="svg-asa"
                   onPointerDown={(ev) => {
                     ev.stopPropagation();
+                    marcarHistoria();
                     setArrastre({ modo: 'redimensionar', id: e.id });
                   }}
                 />
               )}
+              {/* Huecos: ventanas y puertas sobre las paredes */}
+              {(e.huecos ?? []).map((h) => {
+                const horizontal = h.lado === 'norte' || h.lado === 'sur';
+                const x1 = horizontal
+                  ? e.x + h.offset
+                  : h.lado === 'oeste' ? e.x : e.x + e.ancho;
+                const y1 = horizontal
+                  ? h.lado === 'norte' ? e.y : e.y + e.fondo
+                  : e.y + h.offset;
+                const x2 = horizontal ? x1 + h.ancho : x1;
+                const y2 = horizontal ? y1 : y1 + h.ancho;
+                const selHueco = h.id === seleccionHuecoId;
+                return (
+                  <line
+                    key={h.id}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    className={`svg-hueco ${h.tipo}${selHueco ? ' seleccionada' : ''}`}
+                    onPointerDown={(ev) => {
+                      ev.stopPropagation();
+                      setSeleccion(e.id);
+                      setSeleccionHueco(h.id);
+                      marcarHistoria();
+                      setArrastre({ modo: 'mover-hueco', estanciaId: e.id, huecoId: h.id });
+                    }}
+                  >
+                    <title>
+                      {h.tipo === 'ventana' ? 'Ventana' : 'Puerta'} {h.ancho}×{h.alto} m
+                    </title>
+                  </line>
+                );
+              })}
             </g>
           );
         })}

@@ -4,6 +4,7 @@ import { CATALOGO } from '../engine/catalogo';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { NORMATIVAS, PERSONALIZADA_ID } from '../normativa/registry';
 import { useStore } from '../state/store';
+import { InspectorEstancia } from './InspectorEstancia';
 
 const LADOS: { id: Lado; nombre: string }[] = [
   { id: 'norte', nombre: 'Norte (arriba)' },
@@ -135,6 +136,8 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
           ))}
         </div>
       </section>
+
+      <InspectorEstancia />
 
       <section>
         <h3>➕ Añadir estancia</h3>

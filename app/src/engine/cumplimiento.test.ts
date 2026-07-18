@@ -131,6 +131,41 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     ).toBeUndefined();
   });
 
+  it('bioclimática: iluminación insuficiente, salón al norte y exceso al oeste', () => {
+    const p = proyectoBase();
+    p.plantas.baja.push({
+      id: 's1', tipo: 'salon', x: 5, y: 5, ancho: 5, fondo: 5,
+      huecos: [{ id: 'h1', tipo: 'ventana', lado: 'norte', offset: 1, ancho: 1, alto: 1, antepecho: 1 }],
+    });
+    p.plantas.baja.push({
+      id: 'd1', tipo: 'dormitorio', x: 11, y: 5, ancho: 4, fondo: 3, huecos: [],
+    });
+    p.plantas.baja.push({
+      id: 'c1', tipo: 'cocina', x: 5, y: 11, ancho: 4, fondo: 3,
+      huecos: [
+        { id: 'h2', tipo: 'ventana', lado: 'oeste', offset: 0.5, ancho: 2.5, alto: 2, antepecho: 0.5 },
+      ],
+    });
+    const ev = evaluar(p, galapagarU3);
+    const msgs = ev.recomendaciones.map((r) => r.mensaje).join(' | ');
+    // Salón: 1 m² ventana / 25 m² suelo < 10 % y todo al norte
+    expect(msgs).toContain('recomendado ≥ 10 %');
+    expect(msgs).toContain('solo tiene ventanas al norte');
+    // Dormitorio sin ventanas
+    expect(msgs).toContain('sin ventanas');
+    // 5 m² al oeste de 6 m² totales > 40 %
+    expect(msgs).toContain('oeste');
+    expect(ev.metricas.ventanasPorOrientacion.oeste).toBeCloseTo(5);
+  });
+
+  it('bioclimática: sin huecos definidos en ninguna estancia no se emiten avisos', () => {
+    const p = proyectoBase();
+    p.plantas.baja.push({ id: 's1', tipo: 'salon', x: 5, y: 5, ancho: 5, fondo: 5 });
+    const ev = evaluar(p, galapagarU3);
+    const msgs = ev.recomendaciones.map((r) => r.mensaje).join(' | ');
+    expect(msgs).not.toContain('ventana');
+  });
+
   it('recomendaciones: baños, escalera y superficie mínima', () => {
     const p = proyectoBase();
     p.plantas.baja.push({ id: 'd1', tipo: 'dormitorio', x: 5, y: 5, ancho: 2, fondo: 2 }); // 4 m² < 10

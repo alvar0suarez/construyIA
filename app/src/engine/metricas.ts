@@ -1,4 +1,4 @@
-import { PLANTAS, type Proyecto } from '../domain/types';
+import { PLANTAS, type Lado, type Proyecto } from '../domain/types';
 import { tipoEstancia } from './catalogo';
 import { areaParcela, areaRect, areaUnion } from './geometria';
 
@@ -16,6 +16,8 @@ export interface Metricas {
   numDormitorios: number;
   numBanyos: number;
   plazasGarajeRecomendadas: number;
+  /** m² de ventana por orientación (todas las plantas). */
+  ventanasPorOrientacion: Record<Lado, number>;
 }
 
 export function calcularMetricas(proyecto: Proyecto): Metricas {
@@ -50,6 +52,20 @@ export function calcularMetricas(proyecto: Proyecto): Metricas {
   ).length;
   const numBanyos = todas.filter((e) => tipoEstancia(e.tipo).esBanyo).length;
 
+  const ventanasPorOrientacion: Record<Lado, number> = {
+    norte: 0,
+    sur: 0,
+    este: 0,
+    oeste: 0,
+  };
+  for (const e of todas) {
+    for (const h of e.huecos ?? []) {
+      if (h.tipo === 'ventana') {
+        ventanasPorOrientacion[h.lado] += h.ancho * h.alto;
+      }
+    }
+  }
+
   return {
     areaParcela: aParcela,
     areaOcupada,
@@ -62,5 +78,6 @@ export function calcularMetricas(proyecto: Proyecto): Metricas {
     numDormitorios,
     numBanyos,
     plazasGarajeRecomendadas: Math.ceil(superficieComputable / 100 * 1.5) / 1, // 1,5 plazas / 100 m²
+    ventanasPorOrientacion,
   };
 }

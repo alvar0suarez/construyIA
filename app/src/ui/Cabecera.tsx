@@ -15,6 +15,10 @@ export function Cabecera({
   const proyecto = useStore((s) => s.proyecto);
   const importProyecto = useStore((s) => s.importProyecto);
   const resetProyecto = useStore((s) => s.resetProyecto);
+  const deshacer = useStore((s) => s.deshacer);
+  const rehacer = useStore((s) => s.rehacer);
+  const hayPasado = useStore((s) => s.pasado.length > 0);
+  const hayFuturo = useStore((s) => s.futuro.length > 0);
   const inputFichero = useRef<HTMLInputElement>(null);
 
   const exportar = () => {
@@ -62,6 +66,8 @@ export function Cabecera({
         aria-label="Nombre del proyecto"
       />
       <div className="acciones">
+        <button onClick={deshacer} disabled={!hayPasado} title="Deshacer (Ctrl+Z)">↩</button>
+        <button onClick={rehacer} disabled={!hayFuturo} title="Rehacer (Ctrl+Y)">↪</button>
         <button onClick={exportar}>⬇ Exportar</button>
         <button onClick={() => inputFichero.current?.click()}>⬆ Importar</button>
         <button

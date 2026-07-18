@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { evaluar } from '../engine/cumplimiento';
 import { getNormativa } from '../normativa/registry';
 import { useStore } from '../state/store';
@@ -21,6 +21,22 @@ export function App() {
 
   const [pagina, setPagina] = useState<Pagina>('diseno');
   const [vista, setVista] = useState<'plano' | '3d'>('plano');
+
+  useEffect(() => {
+    const onTecla = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.target instanceof HTMLInputElement) return;
+      const s = useStore.getState();
+      if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        s.deshacer();
+      } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        s.rehacer();
+      }
+    };
+    window.addEventListener('keydown', onTecla);
+    return () => window.removeEventListener('keydown', onTecla);
+  }, []);
 
   const evaluacion = evaluar(proyecto, normativa);
 

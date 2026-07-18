@@ -190,6 +190,59 @@ export function evaluar(
     });
   }
 
+  // --- Recomendaciones bioclimáticas (a partir de las ventanas) ---
+  const HABITABLES = new Set(['salon', 'comedor', 'cocina', 'dormPrincipal', 'dormitorio']);
+  const conHuecosDefinidos = todas.some((e) => (e.huecos ?? []).length > 0);
+  if (conHuecosDefinidos) {
+    for (const e of todas) {
+      const def = tipoEstancia(e.tipo);
+      if (!HABITABLES.has(def.id)) continue;
+      const areaVentanas = (e.huecos ?? [])
+        .filter((h) => h.tipo === 'ventana')
+        .reduce((s, h) => s + h.ancho * h.alto, 0);
+      const suelo = areaRect(e);
+      if (areaVentanas === 0) {
+        recomendaciones.push({
+          regla: 'iluminacion',
+          nivel: 'aviso',
+          mensaje: `${def.nombre} sin ventanas: no tendrá luz natural ni ventilación.`,
+        });
+      } else if (areaVentanas < suelo * 0.1 - 1e-6) {
+        recomendaciones.push({
+          regla: 'iluminacion',
+          nivel: 'aviso',
+          mensaje: `${def.nombre}: ${f(areaVentanas)} m² de ventana para ${f(suelo)} m² de suelo (recomendado ≥ 10 %).`,
+        });
+      }
+      if (
+        def.id === 'salon' &&
+        areaVentanas > 0 &&
+        (e.huecos ?? []).filter((h) => h.tipo === 'ventana').every((h) => h.lado === 'norte')
+      ) {
+        recomendaciones.push({
+          regla: 'orientacion',
+          nivel: 'aviso',
+          mensaje:
+            'El salón solo tiene ventanas al norte: recibirá poca luz directa. ' +
+            'Valora abrir huecos al sur/este.',
+        });
+      }
+    }
+
+    const vo = m.ventanasPorOrientacion;
+    const totalVentanas = vo.norte + vo.sur + vo.este + vo.oeste;
+    if (totalVentanas > 4 && vo.oeste > totalVentanas * 0.4) {
+      recomendaciones.push({
+        regla: 'orientacion',
+        nivel: 'aviso',
+        mensaje:
+          `${f(vo.oeste)} m² de ventana al oeste (${f((vo.oeste / totalVentanas) * 100, 0)} % del total): ` +
+          'riesgo de sobrecalentamiento en las tardes de verano y mayor gasto ' +
+          'en climatización. Valora protecciones solares o redistribuir huecos.',
+      });
+    }
+  }
+
   if (m.superficieComputable > 0) {
     const plazas = todas.filter((e) => tipoEstancia(e.tipo).esGaraje).length;
     const rec = Math.ceil((m.superficieComputable / 100) * 1.5);

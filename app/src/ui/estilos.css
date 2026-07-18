@@ -151,6 +151,45 @@ details summary { cursor: pointer; font-size: 12px; color: var(--acento); }
   font-size: 12px; color: var(--tinta-suave); padding: 6px 10px;
   border-top: 1px solid var(--borde);
 }
+.vista3d-toolbar {
+  display: flex; align-items: center; gap: 14px; padding: 6px 10px;
+  border-bottom: 1px solid var(--borde); flex-wrap: wrap;
+}
+.control-sol {
+  display: flex; align-items: center; gap: 6px; font-size: 12px;
+  color: var(--tinta); white-space: nowrap;
+}
+.control-sol input[type='range'] { width: 110px; }
+.dato-sol { font-size: 11px; color: var(--tinta-suave); }
+
+.svg-hueco { stroke-linecap: butt; cursor: ew-resize; }
+.svg-hueco.ventana { stroke: #1e88e5; stroke-width: 0.18; }
+.svg-hueco.puerta { stroke: #8d6e63; stroke-width: 0.2; }
+.svg-hueco.seleccionada { stroke: #d81b60; }
+
+.inspector {
+  background: #f3f7f3; border: 1px solid #cfe0c3; border-radius: 8px;
+  padding: 8px 10px;
+}
+.inspector h3 { display: flex; justify-content: space-between; align-items: baseline; }
+.inspector-area { font-size: 11px; color: var(--tinta-suave); font-weight: normal; }
+.inspector-huecos-cab {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 10px;
+}
+.inspector-huecos-cab h4 { margin: 0; font-size: 12px; }
+.inspector-huecos-cab button { font-size: 11px; padding: 3px 6px; margin-left: 4px; }
+.inspector-vacio { font-size: 11px; color: var(--tinta-suave); }
+.hueco-ficha {
+  border: 1px solid var(--borde); border-radius: 6px; padding: 6px 8px;
+  margin-top: 6px; background: var(--panel); cursor: pointer;
+}
+.hueco-ficha.seleccionada { border-color: #d81b60; }
+.hueco-titulo {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 600; margin-bottom: 4px;
+}
+.hueco-titulo .borrar { padding: 1px 6px; font-size: 11px; }
 
 .cobertura { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
 .cobertura h2 { margin-top: 0; }

@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Estancia, Parcela, PlantaId, Proyecto, Rect } from '../domain/types';
+import type {
+  Estancia,
+  Hueco,
+  Parcela,
+  PlantaId,
+  Proyecto,
+  Rect,
+} from '../domain/types';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { getNormativa, plantillaPersonalizada } from '../normativa/registry';
 import { tipoEstancia } from '../engine/catalogo';
@@ -18,13 +25,19 @@ function proyectoNuevo(): Proyecto {
 }
 
 let contador = 1;
-const nuevoId = () => `e${Date.now().toString(36)}-${contador++}`;
+const nuevoId = (prefijo: string) =>
+  `${prefijo}${Date.now().toString(36)}-${contador++}`;
+
+const MAX_HISTORIA = 50;
 
 interface AppState {
   proyecto: Proyecto;
   normativaPersonalizada: NormativaMunicipal;
   plantaActiva: PlantaId;
   seleccionId: string | null;
+  seleccionHuecoId: string | null;
+  pasado: Proyecto[];
+  futuro: Proyecto[];
 
   normativaActiva: () => NormativaMunicipal;
   setNombre: (nombre: string) => void;
@@ -34,11 +47,36 @@ interface AppState {
   setAlturaPorPlanta: (h: number) => void;
   setPlantaActiva: (p: PlantaId) => void;
   setSeleccion: (id: string | null) => void;
+  setSeleccionHueco: (id: string | null) => void;
+
+  /** Guarda un punto de restauración ANTES de una mutación o gesto de arrastre. */
+  marcarHistoria: () => void;
+  deshacer: () => void;
+  rehacer: () => void;
+
   addEstancia: (tipoId: string) => void;
   updateEstancia: (id: string, rect: Partial<Rect>) => void;
   removeEstancia: (id: string) => void;
+
+  addHueco: (estanciaId: string, tipo: Hueco['tipo']) => void;
+  updateHueco: (estanciaId: string, huecoId: string, parcial: Partial<Hueco>) => void;
+  removeHueco: (estanciaId: string, huecoId: string) => void;
+
   resetProyecto: () => void;
   importProyecto: (p: Proyecto) => void;
+}
+
+/** Devuelve las plantas con la estancia indicada transformada. */
+function conEstancia(
+  proyecto: Proyecto,
+  estanciaId: string,
+  fn: (e: Estancia) => Estancia,
+): Proyecto['plantas'] {
+  const plantas = { ...proyecto.plantas };
+  for (const k of Object.keys(plantas) as PlantaId[]) {
+    plantas[k] = plantas[k].map((e) => (e.id === estanciaId ? fn(e) : e));
+  }
+  return plantas;
 }
 
 export const useStore = create<AppState>()(
@@ -48,6 +86,9 @@ export const useStore = create<AppState>()(
       normativaPersonalizada: { ...plantillaPersonalizada },
       plantaActiva: 'baja',
       seleccionId: null,
+      seleccionHuecoId: null,
+      pasado: [],
+      futuro: [],
 
       normativaActiva: () =>
         getNormativa(get().proyecto.normativaId, get().normativaPersonalizada),
@@ -57,6 +98,8 @@ export const useStore = create<AppState>()(
 
       setParcela: (parcial) =>
         set((s) => ({
+          pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+          futuro: [],
           proyecto: { ...s.proyecto, parcela: { ...s.proyecto.parcela, ...parcial } },
         })),
 
@@ -71,35 +114,75 @@ export const useStore = create<AppState>()(
       setAlturaPorPlanta: (alturaPorPlanta) =>
         set((s) => ({ proyecto: { ...s.proyecto, alturaPorPlanta } })),
 
-      setPlantaActiva: (plantaActiva) => set({ plantaActiva, seleccionId: null }),
+      setPlantaActiva: (plantaActiva) =>
+        set({ plantaActiva, seleccionId: null, seleccionHuecoId: null }),
 
-      setSeleccion: (seleccionId) => set({ seleccionId }),
+      setSeleccion: (seleccionId) => set({ seleccionId, seleccionHuecoId: null }),
+      setSeleccionHueco: (seleccionHuecoId) => set({ seleccionHuecoId }),
+
+      marcarHistoria: () =>
+        set((s) => ({
+          pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+          futuro: [],
+        })),
+
+      deshacer: () =>
+        set((s) => {
+          const anterior = s.pasado[s.pasado.length - 1];
+          if (!anterior) return s;
+          return {
+            proyecto: anterior,
+            pasado: s.pasado.slice(0, -1),
+            futuro: [s.proyecto, ...s.futuro].slice(0, MAX_HISTORIA),
+            seleccionId: null,
+            seleccionHuecoId: null,
+          };
+        }),
+
+      rehacer: () =>
+        set((s) => {
+          const siguiente = s.futuro[0];
+          if (!siguiente) return s;
+          return {
+            proyecto: siguiente,
+            futuro: s.futuro.slice(1),
+            pasado: [...s.pasado, s.proyecto].slice(-MAX_HISTORIA),
+            seleccionId: null,
+            seleccionHuecoId: null,
+          };
+        }),
 
       addEstancia: (tipoId) =>
         set((s) => {
           const def = tipoEstancia(tipoId);
           const dims = dimensionesParcela(s.proyecto.parcela);
           const nueva: Estancia = {
-            id: nuevoId(),
+            id: nuevoId('e'),
             tipo: tipoId,
             x: Math.max(0, dims.ancho / 2 - def.defaultW / 2),
             y: Math.max(0, dims.fondo / 2 - def.defaultD / 2),
             ancho: def.defaultW,
             fondo: def.defaultD,
+            huecos: [],
           };
           const plantas = { ...s.proyecto.plantas };
           plantas[s.plantaActiva] = [...plantas[s.plantaActiva], nueva];
-          return { proyecto: { ...s.proyecto, plantas }, seleccionId: nueva.id };
+          return {
+            pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+            futuro: [],
+            proyecto: { ...s.proyecto, plantas },
+            seleccionId: nueva.id,
+            seleccionHuecoId: null,
+          };
         }),
 
       updateEstancia: (id, rect) =>
-        set((s) => {
-          const plantas = { ...s.proyecto.plantas };
-          plantas[s.plantaActiva] = plantas[s.plantaActiva].map((e) =>
-            e.id === id ? { ...e, ...rect } : e,
-          );
-          return { proyecto: { ...s.proyecto, plantas } };
-        }),
+        set((s) => ({
+          proyecto: {
+            ...s.proyecto,
+            plantas: conEstancia(s.proyecto, id, (e) => ({ ...e, ...rect })),
+          },
+        })),
 
       removeEstancia: (id) =>
         set((s) => {
@@ -108,20 +191,91 @@ export const useStore = create<AppState>()(
             plantas[k] = plantas[k].filter((e) => e.id !== id);
           }
           return {
+            pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+            futuro: [],
             proyecto: { ...s.proyecto, plantas },
             seleccionId: s.seleccionId === id ? null : s.seleccionId,
+            seleccionHuecoId: null,
           };
         }),
 
-      resetProyecto: () => set({ proyecto: proyectoNuevo(), seleccionId: null }),
+      addHueco: (estanciaId, tipo) =>
+        set((s) => {
+          const nuevo: Hueco =
+            tipo === 'ventana'
+              ? { id: nuevoId('h'), tipo, lado: 'sur', offset: 0.5, ancho: 1.2, alto: 1.2, antepecho: 1 }
+              : { id: nuevoId('h'), tipo, lado: 'sur', offset: 0.5, ancho: 0.9, alto: 2.1, antepecho: 0 };
+          return {
+            pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+            futuro: [],
+            proyecto: {
+              ...s.proyecto,
+              plantas: conEstancia(s.proyecto, estanciaId, (e) => ({
+                ...e,
+                huecos: [...(e.huecos ?? []), nuevo],
+              })),
+            },
+            seleccionHuecoId: nuevo.id,
+          };
+        }),
+
+      updateHueco: (estanciaId, huecoId, parcial) =>
+        set((s) => ({
+          proyecto: {
+            ...s.proyecto,
+            plantas: conEstancia(s.proyecto, estanciaId, (e) => ({
+              ...e,
+              huecos: (e.huecos ?? []).map((h) =>
+                h.id === huecoId ? { ...h, ...parcial } : h,
+              ),
+            })),
+          },
+        })),
+
+      removeHueco: (estanciaId, huecoId) =>
+        set((s) => ({
+          pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+          futuro: [],
+          proyecto: {
+            ...s.proyecto,
+            plantas: conEstancia(s.proyecto, estanciaId, (e) => ({
+              ...e,
+              huecos: (e.huecos ?? []).filter((h) => h.id !== huecoId),
+            })),
+          },
+          seleccionHuecoId:
+            s.seleccionHuecoId === huecoId ? null : s.seleccionHuecoId,
+        })),
+
+      resetProyecto: () =>
+        set((s) => ({
+          pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+          futuro: [],
+          proyecto: proyectoNuevo(),
+          seleccionId: null,
+          seleccionHuecoId: null,
+        })),
 
       importProyecto: (p) => {
         if (p?.schemaVersion !== 1 || !p.parcela || !p.plantas) {
           throw new Error('Fichero de proyecto no válido');
         }
-        set({ proyecto: p, seleccionId: null, plantaActiva: 'baja' });
+        set((s) => ({
+          pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+          futuro: [],
+          proyecto: p,
+          seleccionId: null,
+          seleccionHuecoId: null,
+          plantaActiva: 'baja',
+        }));
       },
     }),
-    { name: 'construyia-proyecto' },
+    {
+      name: 'construyia-proyecto',
+      partialize: (s) => ({
+        proyecto: s.proyecto,
+        normativaPersonalizada: s.normativaPersonalizada,
+      }),
+    },
   ),
 );
