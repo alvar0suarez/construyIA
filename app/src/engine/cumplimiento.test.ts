@@ -4,6 +4,8 @@ import { galapagarU3 } from '../normativa/data/galapagar';
 import { evaluar } from './cumplimiento';
 import {
   areaUnion,
+  compartenPared,
+  distanciaRects,
   envolventeEdificable,
   retranqueoPorLado,
 } from './geometria';
@@ -30,6 +32,21 @@ describe('geometría', () => {
     // Parcela 25×32, frente sur: oeste/este 3, norte 3 (fondo), sur 4 (frente)
     const env = envolventeEdificable(p.parcela, galapagarU3);
     expect(env).toEqual({ x: 3, y: 3, ancho: 19, fondo: 25 });
+  });
+
+  it('compartenPared y distanciaRects', () => {
+    const a = { x: 0, y: 0, ancho: 4, fondo: 4 };
+    const pegadoDerecha = { x: 4, y: 1, ancho: 3, fondo: 3 };
+    const pegadoDebajo = { x: 1, y: 4, ancho: 3, fondo: 3 };
+    const separado = { x: 6, y: 0, ancho: 3, fondo: 3 };
+    const esquina = { x: 4, y: 3.8, ancho: 3, fondo: 3 }; // solape de solo 0.2
+    expect(compartenPared(a, pegadoDerecha)).toBe(true);
+    expect(compartenPared(a, pegadoDebajo)).toBe(true);
+    expect(compartenPared(a, separado)).toBe(false);
+    expect(compartenPared(a, esquina)).toBe(false);
+    expect(distanciaRects(a, separado)).toBeCloseTo(2);
+    expect(distanciaRects(a, pegadoDerecha)).toBe(0);
+    expect(distanciaRects(a, { x: 7, y: 8, ancho: 1, fondo: 1 })).toBeCloseTo(5);
   });
 
   it('área de unión no cuenta solapes dos veces', () => {
@@ -164,6 +181,29 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     const ev = evaluar(p, galapagarU3);
     const msgs = ev.recomendaciones.map((r) => r.mensaje).join(' | ');
     expect(msgs).not.toContain('ventana');
+  });
+
+  it('adyacencias: cocina-comedor, en suite y baño cercano', () => {
+    const p = proyectoBase();
+    p.plantas.baja.push(
+      { id: 'c', tipo: 'cocina', x: 5, y: 5, ancho: 3, fondo: 3 },
+      { id: 'co', tipo: 'comedor', x: 12, y: 5, ancho: 3, fondo: 4 }, // lejos de la cocina
+      { id: 'dp', tipo: 'dormPrincipal', x: 5, y: 12, ancho: 4, fondo: 4 },
+      { id: 'b', tipo: 'banyo', x: 16, y: 20, ancho: 2, fondo: 2 }, // lejos de todo
+    );
+    let msgs = evaluar(p, galapagarU3).recomendaciones.map((r) => r.mensaje).join(' | ');
+    expect(msgs).toContain('cocina y el comedor no comparten pared');
+    expect(msgs).toContain('no tiene baño en suite');
+    expect(msgs).toContain('ningún dormitorio tiene un baño cercano');
+
+    // Pegamos el comedor a la cocina y el baño al dormitorio principal
+    p.plantas.baja[1].x = 8; // comedor pegado a cocina (borde x=8)
+    p.plantas.baja[3].x = 9; // baño pegado al principal (x: 5+4)
+    p.plantas.baja[3].y = 13;
+    msgs = evaluar(p, galapagarU3).recomendaciones.map((r) => r.mensaje).join(' | ');
+    expect(msgs).not.toContain('no comparten pared');
+    expect(msgs).not.toContain('en suite');
+    expect(msgs).not.toContain('baño cercano');
   });
 
   it('recomendaciones: baños, escalera y superficie mínima', () => {

@@ -46,23 +46,68 @@ function ControlesOrbita({ objetivo }: { objetivo: [number, number, number] }) {
   return null;
 }
 
-function ControlesInterior({ alturaOjos }: { alturaOjos: number }) {
+function ControlesInterior({
+  alturaOjos,
+  joystick,
+}: {
+  alturaOjos: number;
+  joystick: React.MutableRefObject<{ x: number; y: number }>;
+}) {
   const { camera, gl } = useThree();
   const controles = useRef<PointerLockControls | null>(null);
   const teclas = useRef(new Set<string>());
 
   useEffect(() => {
+    camera.rotation.order = 'YXZ';
     camera.rotation.set(0, Math.PI, 0); // mirar al horizonte, hacia el sur (frente)
     const c = new PointerLockControls(camera, gl.domElement);
     controles.current = c;
-    const lock = () => c.lock();
+
+    // Ratón: capturar el puntero. Táctil: girar arrastrando el dedo.
+    const lock = (e: MouseEvent) => {
+      if ((e as PointerEvent).pointerType !== 'touch') {
+        try {
+          c.lock();
+        } catch {
+          /* pointer lock no soportado */
+        }
+      }
+    };
     gl.domElement.addEventListener('click', lock);
+
+    let dedo: { id: number; x: number; y: number } | null = null;
+    const tDown = (e: PointerEvent) => {
+      if (e.pointerType === 'touch' && dedo === null) {
+        dedo = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      }
+    };
+    const tMove = (e: PointerEvent) => {
+      if (!dedo || e.pointerId !== dedo.id) return;
+      camera.rotation.y -= (e.clientX - dedo.x) * 0.005;
+      camera.rotation.x = Math.min(
+        1.4,
+        Math.max(-1.4, camera.rotation.x - (e.clientY - dedo.y) * 0.005),
+      );
+      dedo = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    };
+    const tUp = (e: PointerEvent) => {
+      if (dedo && e.pointerId === dedo.id) dedo = null;
+    };
+    gl.domElement.addEventListener('pointerdown', tDown);
+    gl.domElement.addEventListener('pointermove', tMove);
+    gl.domElement.addEventListener('pointerup', tUp);
+    gl.domElement.addEventListener('pointercancel', tUp);
+
     const down = (e: KeyboardEvent) => teclas.current.add(e.code);
     const up = (e: KeyboardEvent) => teclas.current.delete(e.code);
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     return () => {
       gl.domElement.removeEventListener('click', lock);
+      gl.domElement.removeEventListener('pointerdown', tDown);
+      gl.domElement.removeEventListener('pointermove', tMove);
+      gl.domElement.removeEventListener('pointerup', tUp);
+      gl.domElement.removeEventListener('pointercancel', tUp);
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       c.unlock();
@@ -79,9 +124,57 @@ function ControlesInterior({ alturaOjos }: { alturaOjos: number }) {
     if (t.has('KeyS') || t.has('ArrowDown')) c.moveForward(-paso);
     if (t.has('KeyA') || t.has('ArrowLeft')) c.moveRight(-paso);
     if (t.has('KeyD') || t.has('ArrowRight')) c.moveRight(paso);
+    if (joystick.current.x !== 0 || joystick.current.y !== 0) {
+      c.moveForward(-joystick.current.y * paso);
+      c.moveRight(joystick.current.x * paso);
+    }
     camera.position.y = alturaOjos; // caminar a altura de ojos constante
   });
   return null;
+}
+
+/** Joystick virtual para moverse en la vista interior desde pantallas táctiles. */
+function Joystick({ valor }: { valor: React.MutableRefObject<{ x: number; y: number }> }) {
+  const base = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  const actualizar = (e: React.PointerEvent) => {
+    const r = base.current!.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height / 2);
+    const max = r.width / 2;
+    const d = Math.min(1, Math.hypot(dx, dy) / max);
+    const ang = Math.atan2(dy, dx);
+    const x = Math.cos(ang) * d;
+    const y = Math.sin(ang) * d;
+    valor.current = { x, y };
+    setPos({ x: x * max * 0.6, y: y * max * 0.6 });
+  };
+  const soltar = () => {
+    valor.current = { x: 0, y: 0 };
+    setPos({ x: 0, y: 0 });
+  };
+
+  return (
+    <div
+      ref={base}
+      className="joystick"
+      onPointerDown={(e) => {
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        actualizar(e);
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons > 0 || e.pointerType === 'touch') actualizar(e);
+      }}
+      onPointerUp={soltar}
+      onPointerCancel={soltar}
+    >
+      <div
+        className="joystick-bola"
+        style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}
+      />
+    </div>
+  );
 }
 
 function Escena({
@@ -285,6 +378,7 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
   const [mes, setMes] = useState(6);
   const [hora, setHora] = useState(14); // hora local oficial
   const [reproduciendo, setReproduciendo] = useState(false);
+  const joystick = useRef({ x: 0, y: 0 });
 
   const dims = dimensionesParcela(parcela);
   const lat = normativa.ubicacion?.lat ?? LAT_DEFECTO;
@@ -367,9 +461,10 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
         {modo === 'orbita' ? (
           <ControlesOrbita objetivo={[0, alturaPorPlanta / 2, 0]} />
         ) : (
-          <ControlesInterior alturaOjos={baseActiva + ALTURA_OJOS} />
+          <ControlesInterior alturaOjos={baseActiva + ALTURA_OJOS} joystick={joystick} />
         )}
       </Canvas>
+      {modo === 'interior' && <Joystick valor={joystick} />}
       <div className="vista3d-leyenda">
         {modo === 'orbita'
           ? `🟩 jaula = envolvente edificable hasta ${normativa.alturaMaxima} m · 🟡 arco = trayectoria solar del día · 🔺 rojo = norte · hora local de ${normativa.municipio}`

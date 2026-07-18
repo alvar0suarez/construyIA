@@ -70,6 +70,35 @@ export function contenidoEn(interior: Rect, exterior: Rect): boolean {
   );
 }
 
+/** Distancia mínima entre dos rectángulos (0 si se tocan o solapan). */
+export function distanciaRects(a: Rect, b: Rect): number {
+  const dx = Math.max(0, Math.max(a.x - (b.x + b.ancho), b.x - (a.x + a.ancho)));
+  const dy = Math.max(0, Math.max(a.y - (b.y + b.fondo), b.y - (a.y + a.fondo)));
+  return Math.hypot(dx, dy);
+}
+
+/**
+ * ¿Comparten pared dos estancias? Se consideran adyacentes si sus bordes
+ * están a menos de `tolerancia` y el tramo común mide al menos `minSolape`
+ * (suficiente para abrir una puerta entre ellas).
+ */
+export function compartenPared(
+  a: Rect,
+  b: Rect,
+  minSolape = 0.7,
+  tolerancia = 0.05,
+): boolean {
+  const solapeX = Math.min(a.x + a.ancho, b.x + b.ancho) - Math.max(a.x, b.x);
+  const solapeY = Math.min(a.y + a.fondo, b.y + b.fondo) - Math.max(a.y, b.y);
+  const tocanEnX =
+    Math.abs(a.x + a.ancho - b.x) <= tolerancia ||
+    Math.abs(b.x + b.ancho - a.x) <= tolerancia;
+  const tocanEnY =
+    Math.abs(a.y + a.fondo - b.y) <= tolerancia ||
+    Math.abs(b.y + b.fondo - a.y) <= tolerancia;
+  return (tocanEnX && solapeY >= minSolape) || (tocanEnY && solapeX >= minSolape);
+}
+
 /**
  * Área de la unión de rectángulos, exacta, por compresión de coordenadas.
  * Se usa para la ocupación: dos estancias solapadas no ocupan el doble.
