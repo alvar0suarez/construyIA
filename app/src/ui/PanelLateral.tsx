@@ -23,16 +23,23 @@ const ETIQUETA_VERIFICACION: Record<NormativaMunicipal['verificacion'], string> 
 export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
   const parcela = useStore((s) => s.proyecto.parcela);
   const normativaId = useStore((s) => s.proyecto.normativaId);
+  const ajustes = useStore((s) => s.proyecto.ajustesNormativa?.[s.proyecto.normativaId]);
   const alturaPorPlanta = useStore((s) => s.proyecto.alturaPorPlanta);
   const plantaActiva = useStore((s) => s.plantaActiva);
   const setParcela = useStore((s) => s.setParcela);
   const setNormativaId = useStore((s) => s.setNormativaId);
   const setPersonalizada = useStore((s) => s.setPersonalizada);
+  const setAjusteNormativa = useStore((s) => s.setAjusteNormativa);
+  const resetAjustesNormativa = useStore((s) => s.resetAjustesNormativa);
   const setAlturaPorPlanta = useStore((s) => s.setAlturaPorPlanta);
   const setPlantaActiva = useStore((s) => s.setPlantaActiva);
   const addEstancia = useStore((s) => s.addEstancia);
 
   const esPersonalizada = normativaId === PERSONALIZADA_ID;
+  const hayAjustes = !!ajustes && Object.keys(ajustes).length > 0;
+  // En la personalizada se edita la plantilla; en las demás, los cambios se
+  // guardan como ajustes del usuario sobre la fuente.
+  const editar = esPersonalizada ? setPersonalizada : setAjusteNormativa;
 
   const numero = (v: number, fn: (n: number) => void) => ({
     type: 'number' as const,
@@ -61,28 +68,26 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
         <p className="verificacion">
           Estado: {ETIQUETA_VERIFICACION[normativa.verificacion]}
         </p>
-        {esPersonalizada ? (
-          <div className="grid-normativa">
-            <label>Retr. frente (m)<input {...numero(normativa.retranqueos.frente, (n) => setPersonalizada({ retranqueos: { ...normativa.retranqueos, frente: n } }))} /></label>
-            <label>Retr. fondo (m)<input {...numero(normativa.retranqueos.fondo, (n) => setPersonalizada({ retranqueos: { ...normativa.retranqueos, fondo: n } }))} /></label>
-            <label>Retr. lateral (m)<input {...numero(normativa.retranqueos.lateral, (n) => setPersonalizada({ retranqueos: { ...normativa.retranqueos, lateral: n } }))} /></label>
-            <label>Ocupación máx. (%)<input {...numero(normativa.ocupacionMaxima, (n) => setPersonalizada({ ocupacionMaxima: n }))} /></label>
-            <label>Edificab. (m²/m²)<input {...numero(normativa.edificabilidadMaxima, (n) => setPersonalizada({ edificabilidadMaxima: n }))} step={0.05} /></label>
-            <label>Altura máx. (m)<input {...numero(normativa.alturaMaxima, (n) => setPersonalizada({ alturaMaxima: n }))} /></label>
-            <label>Plantas máx.<input {...numero(normativa.plantasMaximas, (n) => setPersonalizada({ plantasMaximas: Math.round(n) }))} step={1} /></label>
-            <label>Parcela mín. (m²)<input {...numero(normativa.parcelaMinima ?? 0, (n) => setPersonalizada({ parcelaMinima: n || undefined }))} step={50} /></label>
-            <label>Retr. piscina (m)<input {...numero(normativa.retranqueoPiscina ?? 0, (n) => setPersonalizada({ retranqueoPiscina: n || undefined }))} /></label>
-          </div>
-        ) : (
+        {hayAjustes && (
+          <p className="aviso-ajustes">
+            ✏️ Has modificado parámetros de esta normativa.
+            <button onClick={resetAjustesNormativa}>↺ Restaurar fuente</button>
+          </p>
+        )}
+        <div className="grid-normativa">
+          <label>Retr. frente (m)<input {...numero(normativa.retranqueos.frente, (n) => editar({ retranqueos: { ...normativa.retranqueos, frente: n } }))} /></label>
+          <label>Retr. fondo (m)<input {...numero(normativa.retranqueos.fondo, (n) => editar({ retranqueos: { ...normativa.retranqueos, fondo: n } }))} /></label>
+          <label>Retr. lateral (m)<input {...numero(normativa.retranqueos.lateral, (n) => editar({ retranqueos: { ...normativa.retranqueos, lateral: n } }))} /></label>
+          <label>Ocupación máx. (%)<input {...numero(normativa.ocupacionMaxima, (n) => editar({ ocupacionMaxima: n }))} /></label>
+          <label>Edificab. (m²/m²)<input {...numero(normativa.edificabilidadMaxima, (n) => editar({ edificabilidadMaxima: n }))} step={0.05} /></label>
+          <label>Altura máx. (m)<input {...numero(normativa.alturaMaxima, (n) => editar({ alturaMaxima: n }))} /></label>
+          <label>Plantas máx.<input {...numero(normativa.plantasMaximas, (n) => editar({ plantasMaximas: Math.round(n) }))} step={1} /></label>
+          <label>Parcela mín. (m²)<input {...numero(normativa.parcelaMinima ?? 0, (n) => editar({ parcelaMinima: n || undefined }))} step={50} /></label>
+          <label>Retr. piscina (m)<input {...numero(normativa.retranqueoPiscina ?? 0, (n) => editar({ retranqueoPiscina: n || undefined }))} /></label>
+        </div>
+        {!esPersonalizada && (
           <details>
-            <summary>Parámetros y fuentes</summary>
-            <ul className="parametros">
-              <li>Retranqueos: frente {normativa.retranqueos.frente} m · fondo {normativa.retranqueos.fondo} m · lateral {normativa.retranqueos.lateral} m</li>
-              <li>Ocupación máx.: {normativa.ocupacionMaxima} %</li>
-              <li>Edificabilidad: {normativa.edificabilidadMaxima} m²/m²</li>
-              <li>Altura máx.: {normativa.alturaMaxima} m · {normativa.plantasMaximas} plantas</li>
-              {normativa.parcelaMinima != null && <li>Parcela mínima: {normativa.parcelaMinima} m²</li>}
-            </ul>
+            <summary>Notas y fuentes oficiales</summary>
             {normativa.notas && <p className="notas">{normativa.notas}</p>}
             {normativa.fuentes.length > 0 && (
               <ul className="fuentes">

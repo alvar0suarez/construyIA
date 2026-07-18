@@ -33,6 +33,11 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [arrastre, setArrastre] = useState<Arrastre | null>(null);
+  // Coalescencia de pointermove con requestAnimationFrame: en móviles los
+  // eventos llegan más rápido de lo que renderiza React y el arrastre se
+  // atasca; aplicamos solo la última posición una vez por frame.
+  const rafPendiente = useRef<number | null>(null);
+  const ultimoEvento = useRef<{ x: number; y: number } | null>(null);
 
   const dims = dimensionesParcela(parcela);
   const envolvente = envolventeEdificable(parcela, normativa);
@@ -85,7 +90,16 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
 
   const onMover = (e: React.PointerEvent) => {
     if (!arrastre) return;
-    const p = aMetros(e);
+    ultimoEvento.current = aMetros(e);
+    if (rafPendiente.current != null) return;
+    rafPendiente.current = requestAnimationFrame(() => {
+      rafPendiente.current = null;
+      if (ultimoEvento.current) aplicarMovimiento(ultimoEvento.current);
+    });
+  };
+
+  const aplicarMovimiento = (p: { x: number; y: number }) => {
+    if (!arrastre) return;
     if (arrastre.modo === 'mover-hueco') {
       const est = estancias.find((x) => x.id === arrastre.estanciaId);
       const hueco = est?.huecos?.find((h) => h.id === arrastre.huecoId);

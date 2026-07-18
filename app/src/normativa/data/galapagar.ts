@@ -43,6 +43,38 @@ export const galapagarU3: NormativaMunicipal = {
     'ladrillo visto, revoco a la tirolesa y aluminio en color natural; ' +
     'preferencia por madera, cerámico o pétreo. ⚠️ OJO: la app original ' +
     'usaba ocupación 50 % — el Avance del PGOU documenta 30 % para RU3; ' +
-    'verifica el grado exacto de tu parcela con el Ayuntamiento.',
+    'si tu parcela es de grado RU4, elige "Galapagar RU4". Verifica el ' +
+    'grado exacto con el Ayuntamiento.',
+  ubicacion: { lat: 40.5794, lng: -4.0028 },
+};
+
+/**
+ * Grado RU4 según el cuadro de condiciones de volumen de la Ordenanza 3 del
+ * Avance del PGOU (parcela mínima 250 m², ocupación 50 %, edif. 0,50).
+ * Retranqueos del cuadro general: 5 m a calle (4 m en parcelas registradas
+ * antes de la modificación de las NN.SS) y altura de cornisa/2 a laterales
+ * y testero con mínimo 3 m (6,6/2 = 3,3 m).
+ */
+export const galapagarRU4: NormativaMunicipal = {
+  id: 'galapagar-ru4',
+  municipio: 'Galapagar',
+  provincia: 'Madrid',
+  zona: 'Residencial Unifamiliar RU4',
+  verificacion: 'borrador',
+  fechaRevision: '2026-07-18',
+  fuentes: galapagarU3.fuentes,
+  parcelaMinima: 250,
+  retranqueos: { frente: 5, fondo: 3.3, lateral: 3.3 },
+  ocupacionMaxima: 50,
+  edificabilidadMaxima: 0.5,
+  alturaMaxima: 6.6,
+  plantasMaximas: 2,
+  notas:
+    'RU4 admite pareada y agrupada (y aislada si la forma de la parcela lo ' +
+    'permite). En parcelas registradas antes de la modificación de las ' +
+    'NN.SS el retranqueo a calle es 4 m y a linderos mínimo 3 m — ajusta ' +
+    'los valores si es tu caso. No computa edificabilidad bajo cubierta ni ' +
+    'bajo rasante. 2 plazas de aparcamiento por vivienda. Mismas ' +
+    'condiciones estéticas que RU3.',
   ubicacion: { lat: 40.5794, lng: -4.0028 },
 };
