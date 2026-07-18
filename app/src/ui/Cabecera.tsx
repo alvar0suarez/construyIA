@@ -44,8 +44,16 @@ export function Cabecera({
 
   return (
     <header className="cabecera">
-      <span className="logo">🏠 ConstruyIA</span>
+      <button className="logo" onClick={() => setPagina('inicio')}>
+        <span className="logo-icono">🏠</span> Construy<em>IA</em>
+      </button>
       <nav className="pestanas">
+        <button
+          className={pagina === 'inicio' ? 'activa' : ''}
+          onClick={() => setPagina('inicio')}
+        >
+          Inicio
+        </button>
         <button
           className={pagina === 'diseno' ? 'activa' : ''}
           onClick={() => setPagina('diseno')}
@@ -59,15 +67,21 @@ export function Cabecera({
           🗺 Cobertura
         </button>
       </nav>
-      <input
-        className="nombre-proyecto"
-        value={nombre}
-        onChange={(e) => setNombre(e.target.value)}
-        aria-label="Nombre del proyecto"
-      />
+      {pagina === 'diseno' && (
+        <input
+          className="nombre-proyecto"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          aria-label="Nombre del proyecto"
+        />
+      )}
       <div className="acciones">
-        <button onClick={deshacer} disabled={!hayPasado} title="Deshacer (Ctrl+Z)">↩</button>
-        <button onClick={rehacer} disabled={!hayFuturo} title="Rehacer (Ctrl+Y)">↪</button>
+        {pagina === 'diseno' && (
+          <>
+            <button onClick={deshacer} disabled={!hayPasado} title="Deshacer (Ctrl+Z)">↩</button>
+            <button onClick={rehacer} disabled={!hayFuturo} title="Rehacer (Ctrl+Y)">↪</button>
+          </>
+        )}
         <button onClick={exportar}>⬇ Exportar</button>
         <button onClick={() => inputFichero.current?.click()}>⬆ Importar</button>
         <button

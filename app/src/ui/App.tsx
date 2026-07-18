@@ -4,6 +4,7 @@ import { getNormativa, type AjustesNormativa } from '../normativa/registry';
 import { useStore } from '../state/store';
 import { Cabecera } from './Cabecera';
 import { Cobertura } from './Cobertura';
+import { Inicio } from './Inicio';
 import { PanelCumplimiento } from './PanelCumplimiento';
 import { PanelLateral } from './PanelLateral';
 import { PlanoEditor } from './PlanoEditor';
@@ -12,7 +13,7 @@ const Vista3D = lazy(() =>
   import('./Vista3D').then((m) => ({ default: m.Vista3D })),
 );
 
-export type Pagina = 'diseno' | 'cobertura';
+export type Pagina = 'inicio' | 'diseno' | 'cobertura';
 
 export function App() {
   const proyecto = useStore((s) => s.proyecto);
@@ -23,7 +24,13 @@ export function App() {
     proyecto.ajustesNormativa?.[proyecto.normativaId] as AjustesNormativa | undefined,
   );
 
-  const [pagina, setPagina] = useState<Pagina>('diseno');
+  // La landing solo se muestra como puerta de entrada la primera vez; si ya
+  // hay un proyecto empezado, el usuario aterriza directamente en su diseño.
+  const [pagina, setPagina] = useState<Pagina>(() =>
+    Object.values(useStore.getState().proyecto.plantas).some((p) => p.length > 0)
+      ? 'diseno'
+      : 'inicio',
+  );
   const [vista, setVista] = useState<'plano' | '3d'>('plano');
 
   useEffect(() => {
@@ -55,7 +62,11 @@ export function App() {
   return (
     <div className="app">
       <Cabecera pagina={pagina} setPagina={setPagina} />
-      {pagina === 'cobertura' ? (
+      {pagina === 'inicio' ? (
+        <div className="cuerpo cuerpo-scroll">
+          <Inicio irA={setPagina} />
+        </div>
+      ) : pagina === 'cobertura' ? (
         <div className="cuerpo cuerpo-scroll">
           <Cobertura />
         </div>
