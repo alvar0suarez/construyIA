@@ -62,3 +62,4 @@ npm run build      # build de producción
 - [07 — ¿Web o aplicación instalable?](docs/07-plataforma.md)
 - [08 — Exploración: editor de muros](docs/08-editor-muros.md)
 - [09 — F1: plataforma de normativas + PDF con IA](docs/09-f1-plataforma-normativas.md)
+- [10 — Asistente de diseño con IA](docs/10-asistente-ia.md)
