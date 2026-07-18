@@ -74,7 +74,8 @@ de ser fácil.
       y la vista 3D actual, con botones de descarga.
 - [x] Guías de distancia a los cuatro linderos al seleccionar una estancia.
 - [x] PWA instalable: manifest, iconos SVG/PNG y theme-color («añadir a
-      pantalla de inicio» en móvil). Pendiente: service worker offline.
+      pantalla de inicio» en móvil) + service worker con caché
+      stale-while-revalidate (funciona sin conexión una vez visitada).
 
 ## F1 — Multi-municipio + IA
 
