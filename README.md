@@ -60,3 +60,4 @@ npm run build      # build de producción
 - [05 — Inventario de la app original](docs/05-app-original.md)
 - [06 — Portal público de cobertura](docs/06-portal-cobertura.md)
 - [07 — ¿Web o aplicación instalable?](docs/07-plataforma.md)
+- [08 — Exploración: editor de muros](docs/08-editor-muros.md)
