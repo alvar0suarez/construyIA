@@ -25,6 +25,7 @@ import {
 } from '../engine/soleamiento';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { useStore } from '../state/store';
+import { resolverColision, type MuroColision } from './colisiones';
 import { ladosCubiertos, murosDeEstancia, tejadoDeEstancia } from './muros';
 
 const LAT_DEFECTO = 40.5;
@@ -61,9 +62,11 @@ function ControlesOrbita({ objetivo }: { objetivo: [number, number, number] }) {
 function ControlesInterior({
   alturaOjos,
   joystick,
+  muros,
 }: {
   alturaOjos: number;
   joystick: React.MutableRefObject<{ x: number; y: number }>;
+  muros: MuroColision[];
 }) {
   const { camera, gl } = useThree();
   const controles = useRef<PointerLockControls | null>(null);
@@ -139,6 +142,12 @@ function ControlesInterior({
     if (joystick.current.x !== 0 || joystick.current.y !== 0) {
       c.moveForward(-joystick.current.y * paso);
       c.moveRight(joystick.current.x * paso);
+    }
+    // Colisiones con muros (las puertas dejan pasar; Shift las atraviesa)
+    if (muros.length > 0 && !t.has('ShiftLeft') && !t.has('ShiftRight')) {
+      const pos = resolverColision(camera.position.x, camera.position.z, 0.3, muros);
+      camera.position.x = pos.x;
+      camera.position.z = pos.z;
     }
     camera.position.y = alturaOjos; // caminar a altura de ojos constante
   });
@@ -458,6 +467,57 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
     dims.fondo * 1.25,
   ];
 
+  // Muros de colisión de la planta activa, en coordenadas de mundo (la
+  // escena está centrada). Las puertas de cualquier estancia sobre la misma
+  // línea de muro abren paso también en los muros vecinos fusionados.
+  const murosColision = useMemo<MuroColision[]>(() => {
+    if (modo !== 'interior') return [];
+    const cx = dims.ancho / 2;
+    const cz = dims.fondo / 2;
+    const conMuros = (plantas[plantaActiva] ?? []).filter(
+      (e) => !SIN_MUROS.has(tipoEstancia(e.tipo).id),
+    );
+    const puertas = conMuros.flatMap((e) =>
+      (e.huecos ?? [])
+        .filter((h) => h.tipo === 'puerta')
+        .map((h) => {
+          const horizontal = h.lado === 'norte' || h.lado === 'sur';
+          const linea =
+            h.lado === 'norte' ? e.y
+            : h.lado === 'sur' ? e.y + e.fondo
+            : h.lado === 'oeste' ? e.x
+            : e.x + e.ancho;
+          const ini = horizontal ? e.x + h.offset : e.y + h.offset;
+          return { horizontal, linea, ini, fin: ini + h.ancho };
+        }),
+    );
+    const segmento = (
+      horizontal: boolean,
+      linea: number,
+      d0: number,
+      d1: number,
+    ): MuroColision => {
+      const aperturas = puertas
+        .filter(
+          (p) =>
+            p.horizontal === horizontal &&
+            Math.abs(p.linea - linea) < 0.2 &&
+            p.fin > d0 &&
+            p.ini < d1,
+        )
+        .map((p): [number, number] => [Math.max(p.ini, d0) - d0, Math.min(p.fin, d1) - d0]);
+      return horizontal
+        ? { ax: d0 - cx, az: linea - cz, bx: d1 - cx, bz: linea - cz, aperturas }
+        : { ax: linea - cx, az: d0 - cz, bx: linea - cx, bz: d1 - cz, aperturas };
+    };
+    return conMuros.flatMap((e) => [
+      segmento(true, e.y, e.x, e.x + e.ancho),
+      segmento(true, e.y + e.fondo, e.x, e.x + e.ancho),
+      segmento(false, e.x, e.y, e.y + e.fondo),
+      segmento(false, e.x + e.ancho, e.y, e.y + e.fondo),
+    ]);
+  }, [modo, plantas, plantaActiva, dims.ancho, dims.fondo]);
+
   // Punto de partida del paseo: centro de la primera estancia de la planta
   // activa (o centro de la parcela), a altura de ojos sobre esa planta.
   const baseActiva =
@@ -517,14 +577,18 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
         {modo === 'orbita' ? (
           <ControlesOrbita objetivo={[0, alturaPorPlanta / 2, 0]} />
         ) : (
-          <ControlesInterior alturaOjos={baseActiva + ALTURA_OJOS} joystick={joystick} />
+          <ControlesInterior
+            alturaOjos={baseActiva + ALTURA_OJOS}
+            joystick={joystick}
+            muros={murosColision}
+          />
         )}
       </Canvas>
       {modo === 'interior' && <Joystick valor={joystick} />}
       <div className="vista3d-leyenda">
         {modo === 'orbita'
           ? `Jaula verde: envolvente edificable hasta ${normativa.alturaMaxima} m · arco amarillo: trayectoria solar · cono rojo: norte · hora local de ${normativa.municipio}`
-          : 'Haz clic para capturar el ratón (WASD/flechas para andar, Esc para soltar) o usa el joystick táctil · caminas por la ' +
+          : 'Clic para capturar el ratón (WASD/flechas andan, Esc suelta) o joystick táctil · los muros bloquean y las puertas dejan pasar (Shift los atraviesa) · caminas por la ' +
             (plantaActiva === 'sotano' ? 'planta sótano' : plantaActiva === 'baja' ? 'planta baja' : 'primera planta')}
       </div>
     </div>
