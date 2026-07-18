@@ -22,6 +22,27 @@ repositorio, útil para comparar parcelas y bocetar.
 - [x] CI en GitHub Actions (tests + build).
 - [ ] Parcelas no rectangulares (polígono libre de N vértices).
 - [ ] Despliegue automático (GitHub Pages) para compartir por URL.
+- [ ] Cotejo sistemático de Galapagar U3 contra las NNSS para pasarla a `contrastada`.
+
+## F0.5 — Editor potente (entre el MVP y el multi-municipio)
+
+**Objetivo**: que la herramienta de diseño "se sienta profesional" sin dejar
+de ser fácil.
+
+- [ ] **Huecos**: puertas y ventanas colocables en las paredes de cada
+      estancia (posición, ancho, alto de antepecho), visibles en 2D y 3D.
+- [ ] **Vista interior en primera persona**: caminar por dentro de la casa
+      (three.js PointerLock en escritorio, joystick virtual en móvil), ver
+      la luz que entra por las ventanas colocadas.
+- [ ] **Orientación solar**: posición del sol según latitud/hora/estación,
+      sombras arrojadas en la parcela y dentro de la vivienda.
+- [ ] **Recomendaciones bioclimáticas**: avisos tipo "el salón orientado al
+      norte recibirá poca luz", "demasiada superficie acristalada al oeste →
+      sobrecalentamiento en verano y más gasto en climatización", ratio de
+      huecos por orientación.
+- [ ] Muros con grosor real y estancias que comparten pared (adyacencias
+      para las recomendaciones de distribución de la app original).
+- [ ] Deshacer/rehacer, duplicar estancia, alinear y distribuir.
 
 ## F1 — Multi-municipio + IA
 
@@ -46,6 +67,11 @@ repositorio, útil para comparar parcelas y bocetar.
 - [ ] Catálogo de materiales y soluciones constructivas actualizado
       (aislamiento, estructura, fachadas, cubiertas) con orientación de
       precio y recomendaciones según clima/zona.
+- [ ] **Render de calidad y vídeo**: imágenes fotorrealistas del interior/
+      exterior (render en la nube o IA generativa a partir del modelo 3D)
+      para "enseñar la casa" antes de construirla.
+- [ ] Estimación de consumo energético orientativo según orientación,
+      huecos, aislamiento y zona climática (simplificación CTE DB-HE).
 - [ ] Estimación de presupuesto orientativo por m² según calidades.
 - [ ] Modo arquitecto: exportar memoria de parámetros urbanísticos, DXF/IFC
       básico del boceto.

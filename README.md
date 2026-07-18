@@ -33,9 +33,13 @@ Normativas incluidas:
 
 | Municipio | Ordenanza | Estado |
 |---|---|---|
-| Galapagar (Madrid) | Residencial Unifamiliar U3 (UA4) | ✅ Verificada con NNSS |
-| Las Rozas (Madrid) | Ordenanza Zonal 3 | ⚠️ Borrador — pendiente de verificar |
-| Personalizada | — | ✅ Editable por el usuario |
+| Galapagar (Madrid) | Residencial Unifamiliar U3 (UA4) | ⚠️ Borrador — pendiente de cotejo con las NNSS |
+| Las Rozas (Madrid) | Ordenanza Zonal 3 | ⚠️ Borrador — pendiente de cotejo con la NZ-3 |
+| Personalizada | — | ✏️ Editable por el usuario |
+
+Los estados describen el cotejo hecho por el proyecto sobre las fuentes
+oficiales; **ninguno implica validación por un ayuntamiento u organismo
+público** (ver [modelo de normativa](docs/04-normativa.md)).
 
 ## Desarrollo
 
@@ -55,3 +59,4 @@ npm run build      # build de producción
 - [04 — Modelo de normativa y fuentes](docs/04-normativa.md)
 - [05 — Inventario de la app original](docs/05-app-original.md)
 - [06 — Portal público de cobertura](docs/06-portal-cobertura.md)
+- [07 — ¿Web o aplicación instalable?](docs/07-plataforma.md)

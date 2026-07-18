@@ -10,7 +10,7 @@ interface NormativaMunicipal {
   municipio: string;             // 'Galapagar'
   provincia: string;             // 'Madrid'
   zona: string;                  // 'Residencial Unifamiliar U3 (UA4)'
-  verificacion: 'verificada' | 'borrador' | 'interpretada-ia' | 'personalizada';
+  verificacion: 'contrastada' | 'borrador' | 'interpretada-ia' | 'personalizada';
   fechaRevision: string;         // ISO date de la última revisión
   fuentes: { titulo: string; url?: string }[];
 
@@ -24,19 +24,28 @@ interface NormativaMunicipal {
 }
 ```
 
-**Niveles de verificación** (siempre visibles en la UI):
+**Niveles de confianza** (siempre visibles en la UI):
 
-- `verificada`: contrastada con el documento oficial por una persona.
-- `borrador`: valores provisionales/típicos, pendientes de contrastar.
+- `contrastada`: una persona del proyecto ha cotejado cada parámetro con el
+  documento oficial citado en `fuentes`, en la fecha `fechaRevision`.
+- `borrador`: valores recopilados pero con cotejo incompleto o pendiente.
 - `interpretada-ia` (F1): extraída de un PDF por IA, pendiente de revisión.
 - `personalizada`: introducida a mano por el usuario.
 
+> ⚠️ **Ningún nivel implica validación oficial.** Deliberadamente no usamos
+> la palabra "verificada": sonaría a que un ayuntamiento u organismo público
+> ha validado los datos, y eso no ocurre en ningún caso. Los niveles solo
+> describen cuánto trabajo de cotejo ha hecho el proyecto sobre las fuentes.
+> Si algún día un ayuntamiento colabora oficialmente, se añadirá un nivel
+> `oficial` diferenciado.
+
 ## Normativas incluidas en F0
 
-### Galapagar — Residencial Unifamiliar U3 (UA4) · `verificada`*
+### Galapagar — Residencial Unifamiliar U3 (UA4) · `borrador`
 
 Valores portados de la app original (introducidos en su día a partir de las
-NNSS de Galapagar):
+NNSS de Galapagar). Se mantienen en `borrador` hasta hacer un cotejo
+sistemático parámetro a parámetro contra el documento oficial:
 
 | Parámetro | Valor |
 |---|---|
@@ -50,9 +59,6 @@ NNSS de Galapagar):
 Notas de la ordenanza (de la app original): cubierta inclinada 20–45°; teja
 cerámica o pizarra; sin ladrillo visto; sin carpintería de aluminio en color
 natural; garaje bajo rasante no computa edificabilidad (Art. 3.11.2.2.A).
-
-\* "Verificada" respecto a la app original. Recomendado re-contrastar con el
-documento oficial antes de decisiones importantes.
 
 **Fuentes**:
 - [Normas urbanísticas de Galapagar (Comunidad de Madrid)](https://www.comunidad.madrid/transparencia/sites/default/files/regulation/documents/03_normas_urbanisticas_1.pdf)

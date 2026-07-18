@@ -1,5 +1,16 @@
+/**
+ * Nivel de confianza de los datos de una normativa. Importante: NINGUNO
+ * implica validación por un organismo oficial — describe únicamente cuánto
+ * trabajo de cotejo ha hecho el proyecto sobre las fuentes:
+ *
+ * - `contrastada`: una persona del proyecto ha cotejado cada parámetro con
+ *   el documento oficial citado en `fuentes` (en la fecha `fechaRevision`).
+ * - `borrador`: valores recopilados pero con cotejo incompleto o pendiente.
+ * - `interpretada-ia`: extraída de un documento por IA, sin revisión humana.
+ * - `personalizada`: introducida a mano por el usuario.
+ */
 export type NivelVerificacion =
-  | 'verificada'
+  | 'contrastada'
   | 'borrador'
   | 'interpretada-ia'
   | 'personalizada';

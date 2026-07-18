@@ -5,7 +5,7 @@ export const galapagarU3: NormativaMunicipal = {
   municipio: 'Galapagar',
   provincia: 'Madrid',
   zona: 'Residencial Unifamiliar U3 (UA4)',
-  verificacion: 'verificada',
+  verificacion: 'borrador',
   fechaRevision: '2026-07-18',
   fuentes: [
     {
@@ -24,6 +24,9 @@ export const galapagarU3: NormativaMunicipal = {
   alturaMaxima: 6.5,
   plantasMaximas: 2,
   notas:
+    'Parámetros portados de la app original "Casa Diseño" (introducidos en ' +
+    'su día a partir de las NNSS); pendiente de cotejo sistemático contra el ' +
+    'documento oficial antes de pasar a "contrastada". ' +
     'Cubierta inclinada 20–45°. Teja cerámica o pizarra. Sin ladrillo visto. ' +
     'Sin carpintería de aluminio en color natural. Garaje bajo rasante no ' +
     'computa edificabilidad (Art. 3.11.2.2.A). Tipología aislada o pareada ' +

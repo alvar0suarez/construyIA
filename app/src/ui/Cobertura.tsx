@@ -3,7 +3,7 @@ import type { NormativaMunicipal } from '../normativa/schema';
 import { MAPA_VIEWBOX, PROVINCIAS, proyectar } from './mapa/espanaProvincias';
 
 const ETIQUETA: Record<NormativaMunicipal['verificacion'], { texto: string; clase: string }> = {
-  verificada: { texto: '✅ Verificada', clase: 'ok' },
+  contrastada: { texto: '📗 Contrastada', clase: 'ok' },
   borrador: { texto: '⚠️ Borrador', clase: 'aviso' },
   'interpretada-ia': { texto: '🤖 Interpretada por IA', clase: 'aviso' },
   personalizada: { texto: '✏️ Personalizada', clase: '' },
@@ -12,7 +12,7 @@ const ETIQUETA: Record<NormativaMunicipal['verificacion'], { texto: string; clas
 const REPO_URL = 'https://github.com/alvar0suarez/construyIA';
 
 export function Cobertura() {
-  const verificadas = NORMATIVAS.filter((n) => n.verificacion === 'verificada').length;
+  const contrastadas = NORMATIVAS.filter((n) => n.verificacion === 'contrastada').length;
 
   return (
     <div className="cobertura">
@@ -30,8 +30,8 @@ export function Cobertura() {
             <div className="stat-label">municipios cargados</div>
           </div>
           <div className="stat">
-            <div className="stat-num">{verificadas}</div>
-            <div className="stat-label">verificados</div>
+            <div className="stat-num">{contrastadas}</div>
+            <div className="stat-label">contrastados con doc. oficial</div>
           </div>
           <div className="stat">
             <div className="stat-num">8.131</div>
@@ -49,7 +49,7 @@ export function Cobertura() {
           ))}
           {NORMATIVAS.filter((n) => n.ubicacion).map((n, i) => {
             const pt = proyectar(n.ubicacion!.lat, n.ubicacion!.lng);
-            const verde = n.verificacion === 'verificada';
+            const verde = n.verificacion === 'contrastada';
             // Alterna la posición de la etiqueta para que municipios
             // cercanos no se pisen entre sí.
             const dy = i % 2 === 0 ? -12 : 22;
@@ -71,9 +71,17 @@ export function Cobertura() {
           })}
         </svg>
         <div className="mapa-leyenda">
-          <span><i className="dot ok" /> verificada</span>
+          <span><i className="dot ok" /> contrastada con el documento oficial</span>
           <span><i className="dot aviso" /> borrador / IA pendiente de revisión</span>
         </div>
+        <p className="mapa-nota">
+          <strong>Qué significan los estados</strong>: «contrastada» indica que
+          una persona del proyecto ha cotejado cada parámetro con el documento
+          oficial citado, en la fecha indicada. <strong>Ningún estado implica
+          validación por el ayuntamiento ni por organismo oficial alguno</strong>;
+          la interpretación vinculante de la normativa corresponde siempre al
+          ayuntamiento.
+        </p>
       </section>
 
       <section>
@@ -124,7 +132,7 @@ export function Cobertura() {
             el repositorio del proyecto
           </a>
           . En la hoja de ruta: subida de PDF con interpretación asistida por
-          IA y revisión humana antes de marcarse como verificada.
+          IA y revisión humana antes de marcarse como contrastada.
         </p>
       </section>
     </div>

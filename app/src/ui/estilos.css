@@ -176,6 +176,11 @@ details summary { cursor: pointer; font-size: 12px; color: var(--acento); }
   display: flex; gap: 18px; font-size: 12px; color: var(--tinta-suave);
   margin-top: 6px;
 }
+.mapa-nota {
+  font-size: 12px; color: var(--tinta-suave); max-width: 80ch;
+  background: #fdf6e8; border: 1px solid #ecd9b0; border-radius: 6px;
+  padding: 8px 12px;
+}
 .dot {
   display: inline-block; width: 10px; height: 10px; border-radius: 50%;
   margin-right: 4px;

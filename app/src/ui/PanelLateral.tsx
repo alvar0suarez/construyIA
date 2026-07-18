@@ -13,9 +13,9 @@ const LADOS: { id: Lado; nombre: string }[] = [
 ];
 
 const ETIQUETA_VERIFICACION: Record<NormativaMunicipal['verificacion'], string> = {
-  verificada: '✅ verificada',
-  borrador: '⚠️ borrador',
-  'interpretada-ia': '🤖 interpretada por IA',
+  contrastada: '📗 contrastada con el documento oficial (no es validación oficial)',
+  borrador: '⚠️ borrador — pendiente de cotejo con el documento oficial',
+  'interpretada-ia': '🤖 interpretada por IA — pendiente de revisión humana',
   personalizada: '✏️ personalizada',
 };
 
