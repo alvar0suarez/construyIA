@@ -92,8 +92,21 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
 
   // Zoom y encuadre: pellizco con dos dedos, rueda en escritorio.
   const [zoom, setZoom] = useState<{ z: number; cx: number; cy: number } | null>(null);
+  // Rotación del plano en grados (0/90/180/270): útil para ver parcelas
+  // alargadas en horizontal en el móvil.
+  const [rotacion, setRotacion] = useState(0);
+  const contenidoRef = useRef<SVGGElement>(null);
   const dedos = useRef(new Map<number, { x: number; y: number }>());
   const pinchaInicial = useRef<{ z: number; cx: number; cy: number; dist: number; mx: number; my: number } | null>(null);
+
+  const ZOOM_MIN = 0.35; // permite alejar para ver toda una parcela alargada
+  const ZOOM_MAX = 8;
+  const clampZoom = (v: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v));
+  /** Rota un vector (dx,dy) por `grados` (ejes SVG, Y hacia abajo). */
+  const rotarDelta = (dx: number, dy: number, grados: number) => {
+    const r = (grados * Math.PI) / 180;
+    return { x: dx * Math.cos(r) - dy * Math.sin(r), y: dx * Math.sin(r) + dy * Math.cos(r) };
+  };
   // Coalescencia de pointermove con requestAnimationFrame: en móviles los
   // eventos llegan más rápido de lo que renderiza React y el arrastre se
   // atasca; aplicamos solo la última posición una vez por frame.
@@ -103,12 +116,20 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
   const dims = dimensionesParcela(parcela);
   const envolvente = envolventeEdificable(parcela, normativa);
 
-  const vb0 = { w: dims.ancho + 4, h: dims.fondo + 4 };
+  // Con rotación de 90°/270° el encuadre intercambia ancho y fondo para que
+  // la parcela rotada siga encajando.
+  const rotado90 = rotacion % 180 !== 0;
+  const vb0 = {
+    w: (rotado90 ? dims.fondo : dims.ancho) + 4,
+    h: (rotado90 ? dims.ancho : dims.fondo) + 4,
+  };
   const z = zoom?.z ?? 1;
   const centro = zoom ?? { z: 1, cx: dims.ancho / 2, cy: dims.fondo / 2 };
   const vw = vb0.w / z;
   const vh = vb0.h / z;
   const viewBox = `${centro.cx - vw / 2} ${centro.cy - vh / 2} ${vw} ${vh}`;
+  const rotTransform =
+    rotacion === 0 ? undefined : `rotate(${rotacion} ${dims.ancho / 2} ${dims.fondo / 2})`;
 
   /** Escala aproximada px/metro del svg en pantalla (para el paneo táctil). */
   const pxPorMetro = () => {
@@ -138,15 +159,14 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
     if (dedos.current.size !== 2 || !ini) return;
     const [a, b] = [...dedos.current.values()];
     const dist = Math.hypot(a.x - b.x, a.y - b.y);
-    const nuevoZ = Math.min(8, Math.max(1, (ini.z * dist) / Math.max(1, ini.dist)));
+    const nuevoZ = clampZoom((ini.z * dist) / Math.max(1, ini.dist));
     const escala = pxPorMetro();
     const mx = (a.x + b.x) / 2;
     const my = (a.y + b.y) / 2;
-    setZoom({
-      z: nuevoZ,
-      cx: ini.cx - (mx - ini.mx) / escala,
-      cy: ini.cy - (my - ini.my) / escala,
-    });
+    // El paneo del dedo va en ejes de pantalla; lo pasamos a ejes de la
+    // parcela deshaciendo la rotación.
+    const d = rotarDelta((mx - ini.mx) / escala, (my - ini.my) / escala, -rotacion);
+    setZoom({ z: nuevoZ, cx: ini.cx - d.x, cy: ini.cy - d.y });
   };
   const onPinchUp = (e: React.PointerEvent) => {
     dedos.current.delete(e.pointerId);
@@ -155,7 +175,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
 
   const onRueda = (e: React.WheelEvent) => {
     const p = aMetros(e as unknown as React.PointerEvent);
-    const nuevoZ = Math.min(8, Math.max(1, z * Math.exp(-e.deltaY * 0.0015)));
+    const nuevoZ = clampZoom(z * Math.exp(-e.deltaY * 0.0015));
     if (nuevoZ === z) return;
     setZoom({
       z: nuevoZ,
@@ -186,11 +206,12 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
     return () => window.removeEventListener('keydown', onTecla);
   }, [seleccionId, seleccionHuecoId, removeEstancia, removeHueco]);
 
-  /** Convierte coordenadas de puntero a metros del plano. */
+  /** Convierte coordenadas de puntero a metros del plano. Usa el CTM del
+   * grupo rotado, así el arrastre funciona en cualquier rotación. */
   const aMetros = (e: React.PointerEvent): { x: number; y: number } => {
-    const svg = svgRef.current!;
+    const base = contenidoRef.current ?? svgRef.current!;
     const pt = new DOMPoint(e.clientX, e.clientY);
-    const m = pt.matrixTransform(svg.getScreenCTM()!.inverse());
+    const m = pt.matrixTransform(base.getScreenCTM()!.inverse());
     return { x: m.x, y: m.y };
   };
 
@@ -282,9 +303,36 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
           {plantaActiva === 'sotano' && ' · bajo rasante (no computa edificabilidad)'}
         </span>
         <span className="plano-acciones">
-          {zoom && zoom.z > 1.01 && (
-            <button className="reencuadrar" onClick={() => setZoom(null)}>
-              ⤢ {Math.round(zoom.z * 100)} % · encajar
+          <button
+            className="reencuadrar"
+            title="Alejar"
+            onClick={() => setZoom({ ...centro, z: clampZoom(z / 1.4) })}
+          >
+            −
+          </button>
+          <button
+            className="reencuadrar"
+            title="Acercar"
+            onClick={() => setZoom({ ...centro, z: clampZoom(z * 1.4) })}
+          >
+            +
+          </button>
+          <button
+            className="reencuadrar"
+            title="Girar el plano 90°"
+            onClick={() => setRotacion((r) => (r + 90) % 360)}
+          >
+            ⟳ girar
+          </button>
+          {(zoom || rotacion !== 0) && (
+            <button
+              className="reencuadrar"
+              onClick={() => {
+                setZoom(null);
+                setRotacion(0);
+              }}
+            >
+              ⤢ encajar
             </button>
           )}
           <button
@@ -295,7 +343,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
               descargarPlanoPNG(svgRef.current, `plano-${plantaActiva}.png`)
             }
           >
-            Descargar PNG
+            PNG
           </button>
         </span>
       </div>
@@ -315,6 +363,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
           if (e.target === e.currentTarget) setSeleccion(null);
         }}
       >
+       <g ref={contenidoRef} transform={rotTransform}>
         {/* Parcela */}
         <rect
           x={0}
@@ -520,6 +569,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
             </g>
           );
         })}
+       </g>
       </svg>
       {seleccionId && (
         <div className="plano-ayuda">
