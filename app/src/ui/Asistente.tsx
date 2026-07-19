@@ -1,19 +1,25 @@
 import { useState } from 'react';
+import { tipoEstancia } from '../engine/catalogo';
 import { evaluar } from '../engine/cumplimiento';
-import { consultarAsistente } from '../ia/cliente';
+import { consultarAsistente, type EstanciaPropuesta } from '../ia/cliente';
 import { resumenProyecto } from '../ia/contexto';
+import { PLANTAS } from '../domain/types';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { useStore } from '../state/store';
 import { Seccion } from './Seccion';
 
 const CLAVE_LS = 'construyia-apikey';
+const nombrePlanta = (id: string) => PLANTAS.find((p) => p.id === id)?.nombre ?? id;
 
 export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const proyecto = useStore((s) => s.proyecto);
+  const addEstanciaConfig = useStore((s) => s.addEstanciaConfig);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(CLAVE_LS) ?? '');
   const [ajustes, setAjustes] = useState(false);
   const [deseo, setDeseo] = useState('');
   const [respuesta, setRespuesta] = useState('');
+  const [propuestas, setPropuestas] = useState<EstanciaPropuesta[]>([]);
+  const [anadidas, setAnadidas] = useState<Set<number>>(new Set());
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,6 +32,8 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const preguntar = async () => {
     setError('');
     setRespuesta('');
+    setPropuestas([]);
+    setAnadidas(new Set());
     if (!apiKey) {
       setAjustes(true);
       setError('Introduce tu clave de API de Anthropic para usar el asistente.');
@@ -34,13 +42,19 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
     setCargando(true);
     try {
       const contexto = resumenProyecto(proyecto, normativa, evaluar(proyecto, normativa));
-      const { texto } = await consultarAsistente({ apiKey, contexto, deseo });
+      const { texto, propuestas } = await consultarAsistente({ apiKey, contexto, deseo });
       setRespuesta(texto);
+      setPropuestas(propuestas);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setCargando(false);
     }
+  };
+
+  const aplicar = (p: EstanciaPropuesta, i: number) => {
+    addEstanciaConfig({ tipoId: p.tipo, planta: p.planta, ancho: p.ancho, fondo: p.fondo });
+    setAnadidas((s) => new Set(s).add(i));
   };
 
   return (
@@ -90,6 +104,24 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
 
       {error && <p className="asistente-error">{error}</p>}
       {respuesta && <div className="asistente-respuesta">{respuesta}</div>}
+
+      {propuestas.length > 0 && (
+        <div className="asistente-propuestas">
+          <p className="asistente-nota">Añade al boceto con un clic:</p>
+          {propuestas.map((p, i) => (
+            <button
+              key={i}
+              className="propuesta"
+              disabled={anadidas.has(i)}
+              onClick={() => aplicar(p, i)}
+            >
+              {anadidas.has(i) ? '✓ añadida' : '➕'} {tipoEstancia(p.tipo).nombre}{' '}
+              {p.ancho}×{p.fondo} m · {nombrePlanta(p.planta)}
+            </button>
+          ))}
+        </div>
+      )}
+
       {(respuesta || cargando) && (
         <p className="asistente-nota">
           Sugerencias orientativas de una IA — no sustituyen a tu arquitecto/a.

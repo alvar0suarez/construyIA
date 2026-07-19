@@ -65,6 +65,13 @@ interface AppState {
   rehacer: () => void;
 
   addEstancia: (tipoId: string) => void;
+  /** Añade una estancia con planta y dimensiones concretas (acciones de IA). */
+  addEstanciaConfig: (config: {
+    tipoId: string;
+    planta: PlantaId;
+    ancho?: number;
+    fondo?: number;
+  }) => void;
   updateEstancia: (id: string, rect: Partial<Rect>) => void;
   removeEstancia: (id: string) => void;
   duplicarEstancia: (id: string) => void;
@@ -217,6 +224,33 @@ export const useStore = create<AppState>()(
             pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
             futuro: [],
             proyecto: { ...s.proyecto, plantas },
+            seleccionId: nueva.id,
+            seleccionHuecoId: null,
+          };
+        }),
+
+      addEstanciaConfig: ({ tipoId, planta, ancho, fondo }) =>
+        set((s) => {
+          const def = tipoEstancia(tipoId);
+          const dims = dimensionesParcela(s.proyecto.parcela);
+          const w = ancho ?? def.defaultW;
+          const f = fondo ?? def.defaultD;
+          const nueva: Estancia = {
+            id: nuevoId('e'),
+            tipo: tipoId,
+            x: Math.max(0, Math.min(dims.ancho - w, dims.ancho / 2 - w / 2)),
+            y: Math.max(0, Math.min(dims.fondo - f, dims.fondo / 2 - f / 2)),
+            ancho: w,
+            fondo: f,
+            huecos: [],
+          };
+          const plantas = { ...s.proyecto.plantas };
+          plantas[planta] = [...plantas[planta], nueva];
+          return {
+            pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+            futuro: [],
+            proyecto: { ...s.proyecto, plantas },
+            plantaActiva: planta,
             seleccionId: nueva.id,
             seleccionHuecoId: null,
           };
