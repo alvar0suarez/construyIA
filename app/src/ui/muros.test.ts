@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Estancia } from '../domain/types';
-import { ladosCubiertos } from './muros';
+import { ladosCubiertos, losaConHuecos } from './muros';
 
 const est = (parcial: Partial<Estancia>): Estancia => ({
   id: 'x',
@@ -43,5 +43,26 @@ describe('fusión de muros compartidos', () => {
     const a = est({ id: 'a', x: 0, y: 0, ancho: 6, fondo: 4 });
     const abajo = est({ id: 'b', x: 1, y: 4, ancho: 3, fondo: 3 });
     expect([...ladosCubiertos(abajo, [a])]).toEqual(['norte']);
+  });
+});
+
+describe('losa de forjado con huecos (vacío a doble altura)', () => {
+  const rect = { x: 2, y: 3, ancho: 6, fondo: 8 };
+
+  it('la losa cubre exactamente la huella de la estancia', () => {
+    const geo = losaConHuecos(rect, []);
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox!;
+    expect(bb.min.x).toBeCloseTo(rect.x);
+    expect(bb.max.x).toBeCloseTo(rect.x + rect.ancho);
+    expect(bb.min.y).toBeCloseTo(rect.y);
+    expect(bb.max.y).toBeCloseTo(rect.y + rect.fondo);
+  });
+
+  it('perforar añade geometría (más vértices que sin hueco)', () => {
+    const sin = losaConHuecos(rect, []).attributes.position.count;
+    const con = losaConHuecos(rect, [{ x: 3, y: 4, ancho: 2, fondo: 3 }]).attributes
+      .position.count;
+    expect(con).toBeGreaterThan(sin);
   });
 });

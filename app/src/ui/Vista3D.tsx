@@ -25,7 +25,7 @@ import {
 import type { NormativaMunicipal } from '../normativa/schema';
 import { useStore } from '../state/store';
 import { resolverColision, type MuroColision } from './colisiones';
-import { ladosCubiertos, murosDeEstancia, tejadoRect } from './muros';
+import { ladosCubiertos, losaConHuecos, murosDeEstancia, tejadoRect } from './muros';
 
 const LAT_DEFECTO = 40.5;
 const LNG_DEFECTO = -3.7;
@@ -254,9 +254,13 @@ function Escena({
     return PLANTAS.flatMap((p) => {
       const enPlanta = plantas[p.id] ?? [];
       const idxSobre = sobre.findIndex((sp) => sp.id === p.id);
-      const superior =
-        idxSobre >= 0 && idxSobre + 1 < sobre.length
-          ? plantas[sobre[idxSobre + 1].id as PlantaId] ?? []
+      // Estancias a doble altura de la planta directamente inferior: su vacío
+      // sube hasta esta planta, así que el forjado de aquí debe perforarse.
+      const dobleAbajo =
+        idxSobre > 0
+          ? (plantas[sobre[idxSobre - 1].id as PlantaId] ?? []).filter(
+              (o) => (o.alturaPlantas ?? 1) >= 2,
+            )
           : [];
       return enPlanta.map((e, i) => {
         const def = tipoEstancia(e.tipo);
@@ -266,7 +270,16 @@ function Escena({
         const vecinasAnteriores = enPlanta
           .slice(0, i)
           .filter((otra) => !SIN_MUROS.has(tipoEstancia(otra.tipo).id));
-        void superior;
+        // Huecos del forjado por vacíos a doble altura de la planta inferior.
+        const huecosSuelo = dobleAbajo
+          .map((o) => {
+            const x0 = Math.max(e.x, o.x);
+            const y0 = Math.max(e.y, o.y);
+            const x1 = Math.min(e.x + e.ancho, o.x + o.ancho);
+            const y1 = Math.min(e.y + e.fondo, o.y + o.fondo);
+            return { x: x0, y: y0, ancho: x1 - x0, fondo: y1 - y0 };
+          })
+          .filter((r) => r.ancho > 0.05 && r.fondo > 0.05);
         const alturaMuro = alturaPorPlanta * (e.alturaPlantas ?? 1) - 0.08;
         return {
           e,
@@ -274,6 +287,7 @@ function Escena({
           base,
           esPlana,
           sobreRasante: p.sobreRasante,
+          huecosSuelo,
           muros: conMuros && !esPlana
             ? murosDeEstancia(e, base, alturaMuro, ladosCubiertos(e, vecinasAnteriores))
             : null,
@@ -367,7 +381,7 @@ function Escena({
           </lineSegments>
         )}
 
-        {cuerpos.map(({ e, def, base, esPlana, sobreRasante, muros }) => {
+        {cuerpos.map(({ e, def, base, esPlana, sobreRasante, muros, huecosSuelo }) => {
           if (esPlana) {
             return (
               <mesh key={e.id} position={[e.x + e.ancho / 2, base + 0.075, e.y + e.fondo / 2]} receiveShadow>
@@ -393,11 +407,23 @@ function Escena({
           }
           return (
             <group key={e.id}>
-              {/* Suelo de la estancia */}
-              <mesh position={[e.x + e.ancho / 2, base + 0.04, e.y + e.fondo / 2]} receiveShadow>
-                <boxGeometry args={[e.ancho, 0.08, e.fondo]} />
-                <meshStandardMaterial color={def.color} transparent={!sobreRasante} opacity={sobreRasante ? 1 : 0.5} />
-              </mesh>
+              {/* Suelo de la estancia. Si debajo hay un vacío a doble altura,
+                  el forjado se perfora para no tapar el hueco. */}
+              {huecosSuelo.length > 0 ? (
+                <mesh
+                  geometry={losaConHuecos(e, huecosSuelo)}
+                  rotation={[Math.PI / 2, 0, 0]}
+                  position={[0, base + 0.08, 0]}
+                  receiveShadow
+                >
+                  <meshStandardMaterial color={def.color} transparent={!sobreRasante} opacity={sobreRasante ? 1 : 0.5} />
+                </mesh>
+              ) : (
+                <mesh position={[e.x + e.ancho / 2, base + 0.04, e.y + e.fondo / 2]} receiveShadow>
+                  <boxGeometry args={[e.ancho, 0.08, e.fondo]} />
+                  <meshStandardMaterial color={def.color} transparent={!sobreRasante} opacity={sobreRasante ? 1 : 0.5} />
+                </mesh>
+              )}
               {/* Muros con huecos */}
               {muros.muros.map((m, i) => (
                 <mesh
