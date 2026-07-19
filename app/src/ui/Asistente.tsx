@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { tipoEstancia } from '../engine/catalogo';
 import { evaluar } from '../engine/cumplimiento';
 import { consultarAsistente, type EstanciaPropuesta } from '../ia/cliente';
@@ -14,6 +14,8 @@ const nombrePlanta = (id: string) => PLANTAS.find((p) => p.id === id)?.nombre ??
 export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const proyecto = useStore((s) => s.proyecto);
   const addEstanciaConfig = useStore((s) => s.addEstanciaConfig);
+  const setPersonalizada = useStore((s) => s.setPersonalizada);
+  const setNormativaId = useStore((s) => s.setNormativaId);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(CLAVE_LS) ?? '');
   const [ajustes, setAjustes] = useState(false);
   const [deseo, setDeseo] = useState('');
@@ -22,6 +24,8 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const [anadidas, setAnadidas] = useState<Set<number>>(new Set());
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+  const [pdfEstado, setPdfEstado] = useState('');
+  const inputPdf = useRef<HTMLInputElement>(null);
 
   const guardarKey = (k: string) => {
     setApiKey(k);
@@ -55,6 +59,49 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const aplicar = (p: EstanciaPropuesta, i: number) => {
     addEstanciaConfig({ tipoId: p.tipo, planta: p.planta, ancho: p.ancho, fondo: p.fondo });
     setAnadidas((s) => new Set(s).add(i));
+  };
+
+  const interpretarPdf = async (fichero: File) => {
+    setError('');
+    setPdfEstado('');
+    if (!apiKey) {
+      setAjustes(true);
+      setError('Introduce tu clave de API para interpretar el PDF.');
+      return;
+    }
+    setPdfEstado(`Leyendo ${fichero.name}…`);
+    try {
+      // pdf.js es pesado: se carga solo al interpretar un PDF.
+      const [{ extraerTextoPdf }, { interpretarNormativa }] = await Promise.all([
+        import('../ia/pdf'),
+        import('../ia/interpretarPdf'),
+      ]);
+      const { texto, paginas } = await extraerTextoPdf(fichero);
+      if (texto.replace(/\s/g, '').length < 400) {
+        setPdfEstado('');
+        setError(
+          'El PDF parece un escaneo sin texto. La interpretación de escaneos (por imagen) llegará en una versión posterior.',
+        );
+        return;
+      }
+      setPdfEstado(`Interpretando ${paginas} páginas con IA…`);
+      const norma = await interpretarNormativa({ apiKey, texto });
+      // Se carga como normativa personalizada editable, marcada interpretada-ia.
+      setPersonalizada({
+        ...norma,
+        municipio: norma.municipio || 'Mi municipio',
+        zona: `${norma.zona} (interpretada por IA — revísala)`,
+      });
+      setNormativaId('personalizada');
+      setPdfEstado(
+        `✓ Interpretado: ${norma.municipio} — ${norma.zona}. Cargado como normativa editable; revisa los valores${
+          norma.citas?.length ? ` (${norma.citas.length} citas del documento)` : ''
+        }.`,
+      );
+    } catch (e) {
+      setPdfEstado('');
+      setError((e as Error).message);
+    }
   };
 
   return (
@@ -101,6 +148,24 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
           </p>
         </div>
       )}
+
+      <div className="asistente-pdf">
+        <button className="enlace" onClick={() => inputPdf.current?.click()}>
+          📄 Interpretar un PDF de normativa
+        </button>
+        <input
+          ref={inputPdf}
+          type="file"
+          accept="application/pdf,.pdf"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void interpretarPdf(f);
+            e.target.value = '';
+          }}
+        />
+        {pdfEstado && <p className="asistente-nota">{pdfEstado}</p>}
+      </div>
 
       {error && <p className="asistente-error">{error}</p>}
       {respuesta && <div className="asistente-respuesta">{respuesta}</div>}
