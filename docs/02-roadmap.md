@@ -98,8 +98,10 @@ de ser fácil.
 - [x] **IA.3**: acciones aplicables — la IA propone estancias concretas
       (herramienta `proponer_estancias`) que el usuario añade al boceto con
       un clic, en la planta y dimensiones sugeridas.
-- [ ] IA.2: subir PDF de normativa → `NormativaMunicipal` interpretada con
-      citas (siguiente).
+- [x] **IA.2**: subir un PDF de normativa → la IA extrae los parámetros
+      (pdf.js en el navegador + tool `registrar_normativa` con citas) y los
+      carga como normativa editable en nivel `interpretada-ia` para revisar.
+      Escaneos sin texto: pendiente la vía por imagen (visión).
 
 ## F1 — Multi-municipio + IA
 

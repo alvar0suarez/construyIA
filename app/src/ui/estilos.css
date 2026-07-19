@@ -254,6 +254,9 @@ details summary {
   border-radius: var(--radio-s); font-size: 13px; margin-top: 4px;
 }
 .asistente-nota { font-size: 11px; color: var(--tinta-suave); margin: 6px 0 0; }
+.asistente-pdf {
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--borde);
+}
 .asistente-error { font-size: 12px; color: var(--error); margin: 8px 0 0; }
 .asistente-respuesta {
   margin-top: 10px; font-size: 13px; line-height: 1.55; color: var(--tinta);
