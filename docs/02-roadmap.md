@@ -112,11 +112,13 @@ de ser fácil.
       fragmentado.
 - [x] Cámara que **encuadra la casa** (no la parcela entera), para que
       llene la vista.
-- [ ] **Doble altura**: estancias que ocupan 2 plantas de alto (salón a
-      doble altura) — requiere altura por estancia en el modelo.
-- [ ] **Solapes en cuña**: cuando dos estancias se solapan, resolver la
-      geometría limpiamente (recorte/chaflán) en 2D y 3D en vez de que se
-      pisen los muros.
+- [x] **Doble altura**: estancias que ocupan 2 plantas de alto (salón a
+      doble altura); altura por estancia en el modelo, reflejada en la
+      cornisa/cumbrera del motor y en el 3D.
+- [x] **Solapes en cuña (2D)**: cuando dos estancias se solapan, la posterior
+      recorta a la anterior con una máscara SVG para que el borde se vea en
+      cuña limpia en vez de muros pisados. El motor avisa (regla `solape`) del
+      área solapada por planta. (Pendiente: recorte equivalente en 3D.)
 - [ ] Tejado a 4 aguas y limahoyas para plantas en L.
 
 ## F1 — Multi-municipio + IA
