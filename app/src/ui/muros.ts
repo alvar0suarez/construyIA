@@ -63,6 +63,38 @@ export function tejadoRect(
   return { spec, altura: h };
 }
 
+/**
+ * Losa de suelo (forjado) de una estancia con agujeros rectangulares, para
+ * dejar pasar el vacío de las estancias a doble altura de la planta inferior
+ * (así el forjado de arriba no tapa el hueco del salón a doble altura).
+ *
+ * El shape usa coordenadas de plano absolutas (x → X mundo, y → Z mundo).
+ * Se renderiza con rotación [π/2, 0, 0] y posición [0, base + grosor, 0]
+ * dentro del grupo de la escena, de modo que la losa ocupa base .. base+grosor.
+ */
+export function losaConHuecos(
+  rect: Rect,
+  huecos: Rect[],
+  grosor = 0.08,
+): ExtrudeGeometry {
+  const shape = new Shape();
+  shape.moveTo(rect.x, rect.y);
+  shape.lineTo(rect.x + rect.ancho, rect.y);
+  shape.lineTo(rect.x + rect.ancho, rect.y + rect.fondo);
+  shape.lineTo(rect.x, rect.y + rect.fondo);
+  shape.closePath();
+  for (const h of huecos) {
+    const path = new Path();
+    path.moveTo(h.x, h.y);
+    path.lineTo(h.x + h.ancho, h.y);
+    path.lineTo(h.x + h.ancho, h.y + h.fondo);
+    path.lineTo(h.x, h.y + h.fondo);
+    path.closePath();
+    shape.holes.push(path);
+  }
+  return new ExtrudeGeometry(shape, { depth: grosor, bevelEnabled: false });
+}
+
 /** Tejado a dos aguas sobre una estancia (compatibilidad). */
 export function tejadoDeEstancia(
   e: Estancia,

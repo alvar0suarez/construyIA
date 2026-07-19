@@ -114,7 +114,8 @@ de ser fácil.
       llene la vista.
 - [x] **Doble altura**: estancias que ocupan 2 plantas de alto (salón a
       doble altura); altura por estancia en el modelo, reflejada en la
-      cornisa/cumbrera del motor y en el 3D.
+      cornisa/cumbrera del motor y en el 3D. El forjado de la planta superior
+      se perfora sobre el vacío para no tapar el hueco a doble altura.
 - [x] **Solapes en cuña (2D)**: cuando dos estancias se solapan, la posterior
       recorta a la anterior con una máscara SVG para que el borde se vea en
       cuña limpia en vez de muros pisados. El motor avisa (regla `solape`) del
