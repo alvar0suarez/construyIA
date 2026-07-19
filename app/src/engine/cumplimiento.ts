@@ -2,6 +2,7 @@ import { PLANTAS, type Proyecto } from '../domain/types';
 import type { NormativaMunicipal } from '../normativa/schema';
 import { tipoEstancia } from './catalogo';
 import {
+  areaInterseccion,
   areaRect,
   compartenPared,
   contenidoEn,
@@ -284,6 +285,26 @@ export function evaluar(
           `${f(vo.oeste)} m² de ventana al oeste (${f((vo.oeste / totalVentanas) * 100, 0)} % del total): ` +
           'riesgo de sobrecalentamiento en las tardes de verano y mayor gasto ' +
           'en climatización. Valora protecciones solares o redistribuir huecos.',
+      });
+    }
+  }
+
+  // --- Solapes entre estancias de la misma planta ---
+  for (const p of PLANTAS) {
+    const conMuros = (proyecto.plantas[p.id] ?? []).filter(
+      (e) => tipoEstancia(e.tipo).computaOcup,
+    );
+    let solape = 0;
+    for (let i = 0; i < conMuros.length; i++) {
+      for (let j = i + 1; j < conMuros.length; j++) {
+        solape += areaInterseccion(conMuros[i], conMuros[j]);
+      }
+    }
+    if (solape > 1) {
+      recomendaciones.push({
+        regla: 'solape',
+        nivel: 'aviso',
+        mensaje: `${p.nombre}: hay estancias que se solapan (${f(solape)} m²). En el plano se recortan en cuña, pero conviene ajustarlas para que no se pisen.`,
       });
     }
   }

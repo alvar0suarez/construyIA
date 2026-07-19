@@ -134,6 +134,16 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     ).toBe('error');
   });
 
+  it('detecta solapes entre estancias de la misma planta', () => {
+    const p = proyectoBase();
+    p.plantas.baja.push({ id: 'a', tipo: 'salon', x: 5, y: 5, ancho: 4, fondo: 4 });
+    p.plantas.baja.push({ id: 'b', tipo: 'dormitorio', x: 7, y: 7, ancho: 4, fondo: 4 }); // solapa 2×2 = 4 m²
+    const sin = evaluar(proyectoBase(), galapagarU3).recomendaciones.some((r) => r.regla === 'solape');
+    expect(sin).toBe(false);
+    const con = evaluar(p, galapagarU3).recomendaciones.find((r) => r.regla === 'solape');
+    expect(con?.mensaje).toContain('se solapan');
+  });
+
   it('doble altura: una estancia sube la altura de la edificación y la cumbrera', () => {
     const p = proyectoBase();
     p.alturaPorPlanta = 3;
