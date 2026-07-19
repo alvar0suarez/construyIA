@@ -44,7 +44,7 @@ export function alturaCumbrera(proyecto: Proyecto): number {
     const superior = i + 1 < sobre.length ? proyecto.plantas[sobre[i + 1].id as PlantaId] ?? [] : [];
     for (const e of proyecto.plantas[p.id as PlantaId] ?? []) {
       if (!tipoEstancia(e.tipo).computaOcup) continue;
-      const cornisa = base + proyecto.alturaPorPlanta;
+      const cornisa = base + proyecto.alturaPorPlanta * (e.alturaPlantas ?? 1);
       const caballete =
         cubierta.tipo === 'inclinada' && llevaTejado(e, superior)
           ? alturaTejado(e, cubierta.pendiente)

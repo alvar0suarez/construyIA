@@ -490,6 +490,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
                   className="svg-etiqueta svg-etiqueta-area"
                 >
                   {(e.ancho * e.fondo).toFixed(1)} m²
+                  {(e.alturaPlantas ?? 1) > 1 ? ' · doble altura' : ''}
                 </text>
               )}
               {/* Medidas de los lados: ancho arriba, fondo a la izquierda */}
