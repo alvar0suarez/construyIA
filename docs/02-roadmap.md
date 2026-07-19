@@ -95,8 +95,11 @@ de ser fácil.
       ancladas en la normativa. Panel en el lateral de cumplimiento.
 - [ ] IA.2: subir PDF de normativa → `NormativaMunicipal` interpretada por
       IA con citas, revisable.
-- [ ] IA.3: acciones aplicables (la IA propone cambios del boceto que el
-      usuario acepta con un clic).
+- [x] **IA.3**: acciones aplicables — la IA propone estancias concretas
+      (herramienta `proponer_estancias`) que el usuario añade al boceto con
+      un clic, en la planta y dimensiones sugeridas.
+- [ ] IA.2: subir PDF de normativa → `NormativaMunicipal` interpretada con
+      citas (siguiente).
 
 ## F1 — Multi-municipio + IA
 

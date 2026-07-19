@@ -260,6 +260,15 @@ details summary {
   white-space: pre-wrap; background: #f1f6f0; border: 1px solid #cfe0c3;
   border-radius: var(--radio-s); padding: 10px 12px;
 }
+.asistente-propuestas { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.asistente-propuestas .propuesta {
+  text-align: left; font-size: 12.5px; padding: 8px 10px;
+  border: 1px solid var(--verde-500); color: var(--verde-900);
+  background: #f1f6f0; border-radius: var(--radio-s);
+}
+.asistente-propuestas .propuesta:disabled {
+  color: var(--tinta-suave); border-color: var(--borde); background: var(--panel);
+}
 
 /* ─── Panel de cumplimiento ─────────────────────────────────────────── */
 .metricas { width: 100%; border-collapse: collapse; font-size: 12.5px; }
