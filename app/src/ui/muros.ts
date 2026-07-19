@@ -1,5 +1,5 @@
 import { ExtrudeGeometry, Path, Shape } from 'three';
-import type { Estancia, Lado } from '../domain/types';
+import type { Estancia, Lado, Rect } from '../domain/types';
 import { alturaTejado } from '../engine/cubierta';
 
 export const GROSOR_MURO = 0.12;
@@ -29,9 +29,41 @@ export interface CristalSpec {
  * el oeste (paredes N/S) o desde el norte (paredes E/O), igual que en 2D.
  */
 /**
- * Tejado a dos aguas sobre una estancia: prisma triangular con el caballete
- * a lo largo del lado mayor.
+ * Tejado a dos aguas sobre un rectángulo (la huella de la casa): prisma
+ * triangular con el caballete a lo largo del lado mayor. El alero sobresale
+ * `vuelo` metros por los cuatro lados para que parezca un tejado de verdad.
  */
+export function tejadoRect(
+  rect: Rect,
+  cotaCornisa: number,
+  pendienteGrados: number,
+  vuelo = 0.4,
+): { spec: MuroSpec; altura: number } {
+  const r = {
+    x: rect.x - vuelo,
+    y: rect.y - vuelo,
+    ancho: rect.ancho + 2 * vuelo,
+    fondo: rect.fondo + 2 * vuelo,
+  };
+  const aLoLargoDeX = r.ancho >= r.fondo;
+  const luz = aLoLargoDeX ? r.fondo : r.ancho;
+  const largo = aLoLargoDeX ? r.ancho : r.fondo;
+  const h = (luz / 2) * Math.tan((pendienteGrados * Math.PI) / 180);
+
+  const seccion = new Shape();
+  seccion.moveTo(0, 0);
+  seccion.lineTo(luz, 0);
+  seccion.lineTo(luz / 2, h);
+  seccion.closePath();
+  const geometria = new ExtrudeGeometry(seccion, { depth: largo, bevelEnabled: false });
+
+  const spec: MuroSpec = aLoLargoDeX
+    ? { geometria, posicion: [r.x, cotaCornisa, r.y + r.fondo], rotacionY: Math.PI / 2 }
+    : { geometria, posicion: [r.x, cotaCornisa, r.y], rotacionY: 0 };
+  return { spec, altura: h };
+}
+
+/** Tejado a dos aguas sobre una estancia (compatibilidad). */
 export function tejadoDeEstancia(
   e: Estancia,
   cotaCornisa: number,
@@ -49,7 +81,6 @@ export function tejadoDeEstancia(
   seccion.closePath();
   const geometria = new ExtrudeGeometry(seccion, { depth: largo, bevelEnabled: false });
 
-  // Con caballete según X: rotación 90° sobre Y ⇒ local (x,y,z) → (z, y, -x)
   return aLoLargoDeX
     ? { geometria, posicion: [e.x, cotaCornisa, e.y + e.fondo], rotacionY: Math.PI / 2 }
     : { geometria, posicion: [e.x, cotaCornisa, e.y], rotacionY: 0 };
