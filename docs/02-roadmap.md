@@ -103,6 +103,22 @@ de ser fácil.
       carga como normativa editable en nivel `interpretada-ia` para revisar.
       Escaneos sin texto: pendiente la vía por imagen (visión).
 
+### Motor 3D (rediseño, feedback de uso real)
+
+- [x] Vista 3D a casi pantalla completa en móvil (antes era una franja): el
+      canvas de R3F llena su contenedor (~66 % del viewport móvil).
+- [x] **Tejado unificado**: un solo tejado a dos aguas sobre la huella de la
+      casa (con alero), en lugar de un tejadito por estancia que se veía
+      fragmentado.
+- [x] Cámara que **encuadra la casa** (no la parcela entera), para que
+      llene la vista.
+- [ ] **Doble altura**: estancias que ocupan 2 plantas de alto (salón a
+      doble altura) — requiere altura por estancia en el modelo.
+- [ ] **Solapes en cuña**: cuando dos estancias se solapan, resolver la
+      geometría limpiamente (recorte/chaflán) en 2D y 3D en vez de que se
+      pisen los muros.
+- [ ] Tejado a 4 aguas y limahoyas para plantas en L.
+
 ## F1 — Multi-municipio + IA
 
 **Objetivo**: que funcione para cualquier municipio de España.

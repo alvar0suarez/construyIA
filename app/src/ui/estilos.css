@@ -310,7 +310,9 @@ details summary {
   border-radius: var(--radio); overflow: hidden; position: relative;
   box-shadow: var(--sombra);
 }
-.vista3d canvas { flex: 1; min-height: 0; }
+/* El div de R3F no hereda la altura en flexbox; este envoltorio con altura
+   mínima garantizada (grande en móvil) es lo que R3F mide para el canvas. */
+.vista3d-lienzo { flex: 1; min-height: 300px; position: relative; }
 .vista3d-leyenda {
   font-size: 12px; color: var(--tinta-suave); padding: 7px 12px;
   border-top: 1px solid var(--borde);
@@ -484,14 +486,18 @@ details summary {
 @media (max-width: 1000px) {
   .cuerpo { flex-direction: column; overflow-y: auto; }
   .panel-lateral, .panel-cumplimiento { width: 100%; }
-  .lienzo { min-height: 62vh; padding: 10px; }
+  .lienzo { min-height: 80vh; padding: 10px; }
   .app { height: auto; min-height: 100vh; }
   .cabecera { flex-wrap: wrap; gap: 8px; padding: 8px 10px; }
   .nombre-proyecto { order: 3; flex: 1 1 100%; }
   .pestanas button { padding: 8px 10px; }
   .pasos-grid { grid-template-columns: 1fr 1fr; }
   .dos-columnas { grid-template-columns: 1fr; }
-  .vista3d { min-height: 440px; }
+  /* La vista 3D y el plano son protagonistas: casi pantalla completa. */
+  .vista3d, .plano-contenedor { min-height: 82vh; }
+  .vista3d-lienzo { min-height: 62vh; }
+  .vista3d-toolbar { padding: 5px 8px; gap: 6px 8px; font-size: 12px; }
+  .vista3d-leyenda { font-size: 10.5px; padding: 5px 8px; max-height: 3.4em; overflow: hidden; }
   button { padding: 9px 14px; } /* objetivos táctiles más grandes */
 }
 @media (max-width: 560px) {

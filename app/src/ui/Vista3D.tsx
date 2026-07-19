@@ -12,7 +12,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { CUBIERTA_DEFECTO, PLANTAS, type PlantaId } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
-import { llevaTejado } from '../engine/cubierta';
 import { dimensionesParcela, envolventeEdificable } from '../engine/geometria';
 import {
   diaDelAnyo,
@@ -26,7 +25,7 @@ import {
 import type { NormativaMunicipal } from '../normativa/schema';
 import { useStore } from '../state/store';
 import { resolverColision, type MuroColision } from './colisiones';
-import { ladosCubiertos, murosDeEstancia, tejadoDeEstancia } from './muros';
+import { ladosCubiertos, murosDeEstancia, tejadoRect } from './muros';
 
 const LAT_DEFECTO = 40.5;
 const LNG_DEFECTO = -3.7;
@@ -267,6 +266,7 @@ function Escena({
         const vecinasAnteriores = enPlanta
           .slice(0, i)
           .filter((otra) => !SIN_MUROS.has(tipoEstancia(otra.tipo).id));
+        void superior;
         return {
           e,
           def,
@@ -281,13 +281,31 @@ function Escena({
                 ladosCubiertos(e, vecinasAnteriores),
               )
             : null,
-          tejado:
-            p.sobreRasante && cubierta.tipo === 'inclinada' && llevaTejado(e, superior)
-              ? tejadoDeEstancia(e, base + alturaPorPlanta - 0.06, cubierta.pendiente)
-              : null,
         };
       });
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plantas, alturaPorPlanta]);
+
+  // Un único tejado sobre la huella completa de la casa (más limpio que un
+  // tejadito por estancia), a la cota de la planta más alta con estancias.
+  const tejadoCasa = useMemo(() => {
+    if (cubierta.tipo !== 'inclinada') return null;
+    const sobre = PLANTAS.filter((p) => p.sobreRasante);
+    const conMuros = sobre.flatMap((p) =>
+      (plantas[p.id] ?? []).filter((e) => !SIN_MUROS.has(tipoEstancia(e.tipo).id)),
+    );
+    if (conMuros.length === 0) return null;
+    const x0 = Math.min(...conMuros.map((e) => e.x));
+    const y0 = Math.min(...conMuros.map((e) => e.y));
+    const x1 = Math.max(...conMuros.map((e) => e.x + e.ancho));
+    const y1 = Math.max(...conMuros.map((e) => e.y + e.fondo));
+    const huella = { x: x0, y: y0, ancho: x1 - x0, fondo: y1 - y0 };
+    // Cota de arranque: cornisa de la planta más alta que tiene estancias.
+    let plantasConUso = 0;
+    for (const p of sobre) if ((plantas[p.id] ?? []).length > 0) plantasConUso++;
+    const cota = Math.max(1, plantasConUso) * alturaPorPlanta - 0.06;
+    return tejadoRect(huella, cota, cubierta.pendiente);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantas, alturaPorPlanta, cubierta.tipo, cubierta.pendiente]);
 
@@ -349,7 +367,7 @@ function Escena({
           </lineSegments>
         )}
 
-        {cuerpos.map(({ e, def, base, esPlana, sobreRasante, muros, tejado }) => {
+        {cuerpos.map(({ e, def, base, esPlana, sobreRasante, muros }) => {
           if (esPlana) {
             return (
               <mesh key={e.id} position={[e.x + e.ancho / 2, base + 0.075, e.y + e.fondo / 2]} receiveShadow>
@@ -359,19 +377,17 @@ function Escena({
             );
           }
           if (!muros) {
-            // Porche: losa de suelo; el techo plano solo si no lleva tejado
+            // Porche: losa de suelo + techo plano (no lo cubre el tejado).
             return (
               <group key={e.id}>
                 <mesh position={[e.x + e.ancho / 2, base + 0.04, e.y + e.fondo / 2]} receiveShadow>
                   <boxGeometry args={[e.ancho, 0.08, e.fondo]} />
                   <meshStandardMaterial color={def.color} />
                 </mesh>
-                {!tejado && (
-                  <mesh position={[e.x + e.ancho / 2, base + alturaPorPlanta - 0.1, e.y + e.fondo / 2]} castShadow>
-                    <boxGeometry args={[e.ancho, 0.12, e.fondo]} />
-                    <meshStandardMaterial color="#a1887f" />
-                  </mesh>
-                )}
+                <mesh position={[e.x + e.ancho / 2, base + alturaPorPlanta - 0.1, e.y + e.fondo / 2]} castShadow>
+                  <boxGeometry args={[e.ancho, 0.12, e.fondo]} />
+                  <meshStandardMaterial color="#a1887f" />
+                </mesh>
               </group>
             );
           }
@@ -410,21 +426,18 @@ function Escena({
           );
         })}
 
-        {/* Tejados a dos aguas */}
-        {cuerpos
-          .filter((c) => c.tejado)
-          .map(({ e, tejado }) => (
-            <mesh
-              key={`t${e.id}`}
-              geometry={tejado!.geometria}
-              position={tejado!.posicion}
-              rotation={[0, tejado!.rotacionY, 0]}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial color="#a95f38" />
-            </mesh>
-          ))}
+        {/* Tejado único a dos aguas sobre la huella de la casa */}
+        {tejadoCasa && (
+          <mesh
+            geometry={tejadoCasa.spec.geometria}
+            position={tejadoCasa.spec.posicion}
+            rotation={[0, tejadoCasa.spec.rotacionY, 0]}
+            castShadow
+            receiveShadow
+          >
+            <meshStandardMaterial color="#a95f38" />
+          </mesh>
+        )}
       </group>
     </>
   );
@@ -462,11 +475,37 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
     return () => clearInterval(t);
   }, [reproduciendo]);
 
-  const camaraOrbita: [number, number, number] = [
-    dims.ancho * 0.9,
-    Math.max(dims.ancho, dims.fondo) * 0.7,
-    dims.fondo * 1.25,
-  ];
+  // Encuadre que centra la CASA (no la parcela entera) para que llene la
+  // vista. La escena está trasladada -dims/2, así que el origen 3D es el
+  // centro de la parcela.
+  const encuadre = useMemo(() => {
+    const est = PLANTAS.filter((p) => p.sobreRasante).flatMap((p) =>
+      (plantas[p.id] ?? []).filter((e) => !SIN_MUROS.has(tipoEstancia(e.tipo).id)),
+    );
+    const cx = dims.ancho / 2;
+    const cz = dims.fondo / 2;
+    let foco: [number, number, number];
+    let tam: number;
+    if (est.length === 0) {
+      foco = [0, alturaPorPlanta / 2, 0];
+      tam = Math.max(dims.ancho, dims.fondo);
+    } else {
+      const x0 = Math.min(...est.map((e) => e.x));
+      const x1 = Math.max(...est.map((e) => e.x + e.ancho));
+      const y0 = Math.min(...est.map((e) => e.y));
+      const y1 = Math.max(...est.map((e) => e.y + e.fondo));
+      foco = [(x0 + x1) / 2 - cx, alturaPorPlanta * 0.7, (y0 + y1) / 2 - cz];
+      tam = Math.max(x1 - x0, y1 - y0, alturaPorPlanta * 2);
+    }
+    const d = tam * 1.4;
+    const pos: [number, number, number] = [
+      foco[0] + d * 0.7,
+      foco[1] + d * 0.75,
+      foco[2] + d * 0.95,
+    ];
+    return { foco, pos };
+  }, [plantas, dims.ancho, dims.fondo, alturaPorPlanta]);
+  const camaraOrbita = encuadre.pos;
 
   // Muros de colisión de la planta activa, en coordenadas de mundo (la
   // escena está centrada). Las puertas de cualquier estancia sobre la misma
@@ -579,30 +618,35 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
             : ' · 🌙 noche'}
         </span>
       </div>
-      <Canvas
-        key={modo} // reinicia la cámara al cambiar de modo
-        camera={{ position: modo === 'orbita' ? camaraOrbita : camaraInterior, fov: modo === 'orbita' ? 45 : 70 }}
-        shadows={!TACTIL}
-        dpr={[1, TACTIL ? 1.5 : 2]}
-        gl={{
-          antialias: !TACTIL,
-          powerPreference: 'high-performance',
-          preserveDrawingBuffer: true, // para capturar la vista como imagen
-        }}
-        frameloop={modo === 'interior' || reproduciendo ? 'always' : 'demand'}
-      >
-        <Escena normativa={normativa} mes={mes} horaSolar={horaSolar} conJaula={modo === 'orbita'} />
-        {modo === 'orbita' ? (
-          <ControlesOrbita objetivo={[0, alturaPorPlanta / 2, 0]} />
-        ) : (
-          <ControlesInterior
-            alturaOjos={baseActiva + ALTURA_OJOS}
-            joystick={joystick}
-            muros={murosColision}
-          />
-        )}
-      </Canvas>
-      {modo === 'interior' && <Joystick valor={joystick} />}
+      <div className="vista3d-lienzo">
+        <Canvas
+          key={modo} // reinicia la cámara al cambiar de modo
+          // Absoluto por inset: llena el contenedor sin depender de
+          // height:100% (que colapsa con el min-height del padre flex).
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          camera={{ position: modo === 'orbita' ? camaraOrbita : camaraInterior, fov: modo === 'orbita' ? 45 : 70 }}
+          shadows={!TACTIL}
+          dpr={[1, TACTIL ? 1.5 : 2]}
+          gl={{
+            antialias: !TACTIL,
+            powerPreference: 'high-performance',
+            preserveDrawingBuffer: true, // para capturar la vista como imagen
+          }}
+          frameloop={modo === 'interior' || reproduciendo ? 'always' : 'demand'}
+        >
+          <Escena normativa={normativa} mes={mes} horaSolar={horaSolar} conJaula={modo === 'orbita'} />
+          {modo === 'orbita' ? (
+            <ControlesOrbita objetivo={encuadre.foco} />
+          ) : (
+            <ControlesInterior
+              alturaOjos={baseActiva + ALTURA_OJOS}
+              joystick={joystick}
+              muros={murosColision}
+            />
+          )}
+        </Canvas>
+        {modo === 'interior' && <Joystick valor={joystick} />}
+      </div>
       <div className="vista3d-leyenda">
         {modo === 'orbita'
           ? `Jaula verde: envolvente edificable hasta ${normativa.alturaMaxima} m · arco amarillo: trayectoria solar · cono rojo: norte · hora local de ${normativa.municipio}`
