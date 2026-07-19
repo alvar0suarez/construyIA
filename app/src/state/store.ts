@@ -6,7 +6,6 @@ import type {
   Parcela,
   PlantaId,
   Proyecto,
-  Rect,
 } from '../domain/types';
 import type { NormativaMunicipal } from '../normativa/schema';
 import {
@@ -72,7 +71,7 @@ interface AppState {
     ancho?: number;
     fondo?: number;
   }) => void;
-  updateEstancia: (id: string, rect: Partial<Rect>) => void;
+  updateEstancia: (id: string, cambios: Partial<Estancia>) => void;
   removeEstancia: (id: string) => void;
   duplicarEstancia: (id: string) => void;
 

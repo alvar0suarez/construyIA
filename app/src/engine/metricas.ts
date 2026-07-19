@@ -58,7 +58,19 @@ export function calcularMetricas(
   }
 
   const plantasConUso = sobreRasante.filter((es) => es.length > 0).length;
-  const alturaEdificacion = plantasConUso * proyecto.alturaPorPlanta;
+  // Altura a cornisa: la cota superior más alta (considerando estancias a
+  // doble altura, que suben más que su planta).
+  let alturaEdificacion = 0;
+  sobreRasante.forEach((estancias, i) => {
+    const base = i * proyecto.alturaPorPlanta;
+    for (const e of estancias) {
+      if (!tipoEstancia(e.tipo).computaOcup) continue;
+      alturaEdificacion = Math.max(
+        alturaEdificacion,
+        base + proyecto.alturaPorPlanta * (e.alturaPlantas ?? 1),
+      );
+    }
+  });
 
   const todas = Object.values(proyecto.plantas).flat();
   const superficieUtilAprox = todas

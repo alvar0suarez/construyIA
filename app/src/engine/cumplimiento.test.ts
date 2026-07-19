@@ -134,6 +134,19 @@ describe('cumplimiento normativo (Galapagar U3)', () => {
     ).toBe('error');
   });
 
+  it('doble altura: una estancia sube la altura de la edificación y la cumbrera', () => {
+    const p = proyectoBase();
+    p.alturaPorPlanta = 3;
+    p.cubierta = { tipo: 'plana', pendiente: 0 };
+    // Salón a doble altura en planta baja (sin primera): 2 × 3 = 6 m a cornisa
+    p.plantas.baja.push({ id: 's', tipo: 'salon', x: 5, y: 5, ancho: 5, fondo: 4, alturaPlantas: 2 });
+    const ev = evaluar(p, galapagarU3);
+    expect(ev.metricas.alturaEdificacion).toBeCloseTo(6);
+    expect(ev.metricas.alturaCumbrera).toBeCloseTo(6);
+    // La superficie computable se cuenta una vez (es el suelo), no doble
+    expect(ev.metricas.superficieComputable).toBeCloseTo(20);
+  });
+
   it('parcela mínima', () => {
     const p = proyectoBase();
     p.parcela = { norte: 15, sur: 15, este: 20, oeste: 20, frente: 'sur' }; // 300 m² < 500

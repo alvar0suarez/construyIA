@@ -66,6 +66,19 @@ export function InspectorEstancia() {
         <label>Fondo (m)<input {...numero(estancia.fondo, (n) => updateEstancia(estancia.id, { fondo: Math.max(0.5, n) }))} /></label>
         <label>X (m)<input {...numero(estancia.x, (n) => updateEstancia(estancia.id, { x: Math.max(0, n) }))} /></label>
         <label>Y (m)<input {...numero(estancia.y, (n) => updateEstancia(estancia.id, { y: Math.max(0, n) }))} /></label>
+        <label>
+          Altura
+          <select
+            value={estancia.alturaPlantas ?? 1}
+            onChange={(e) => {
+              marcarHistoria();
+              updateEstancia(estancia.id, { alturaPlantas: Number(e.target.value) });
+            }}
+          >
+            <option value={1}>Normal (1 planta)</option>
+            <option value={2}>Doble altura (2 plantas)</option>
+          </select>
+        </label>
       </div>
 
       <div className="inspector-huecos-cab">

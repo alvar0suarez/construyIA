@@ -48,6 +48,12 @@ export interface Estancia extends Rect {
   id: string;
   tipo: string; // id de TipoEstanciaDef en el catálogo
   huecos?: Hueco[];
+  /**
+   * Nº de plantas que ocupa en altura (doble altura = 2). Por defecto 1.
+   * Solo afecta al volumen 3D y a la altura de la edificación; la
+   * superficie construida se cuenta una vez (es el suelo).
+   */
+  alturaPlantas?: number;
 }
 
 export interface Proyecto {

@@ -267,6 +267,7 @@ function Escena({
           .slice(0, i)
           .filter((otra) => !SIN_MUROS.has(tipoEstancia(otra.tipo).id));
         void superior;
+        const alturaMuro = alturaPorPlanta * (e.alturaPlantas ?? 1) - 0.08;
         return {
           e,
           def,
@@ -274,12 +275,7 @@ function Escena({
           esPlana,
           sobreRasante: p.sobreRasante,
           muros: conMuros && !esPlana
-            ? murosDeEstancia(
-                e,
-                base,
-                alturaPorPlanta - 0.08,
-                ladosCubiertos(e, vecinasAnteriores),
-              )
+            ? murosDeEstancia(e, base, alturaMuro, ladosCubiertos(e, vecinasAnteriores))
             : null,
         };
       });
@@ -301,11 +297,15 @@ function Escena({
     const x1 = Math.max(...conMuros.map((e) => e.x + e.ancho));
     const y1 = Math.max(...conMuros.map((e) => e.y + e.fondo));
     const huella = { x: x0, y: y0, ancho: x1 - x0, fondo: y1 - y0 };
-    // Cota de arranque: cornisa de la planta más alta que tiene estancias.
-    let plantasConUso = 0;
-    for (const p of sobre) if ((plantas[p.id] ?? []).length > 0) plantasConUso++;
-    const cota = Math.max(1, plantasConUso) * alturaPorPlanta - 0.06;
-    return tejadoRect(huella, cota, cubierta.pendiente);
+    // Cota de arranque: la cornisa más alta (considerando dobles alturas).
+    let cota = alturaPorPlanta;
+    sobre.forEach((p, i) => {
+      for (const e of plantas[p.id] ?? []) {
+        if (SIN_MUROS.has(tipoEstancia(e.tipo).id)) continue;
+        cota = Math.max(cota, i * alturaPorPlanta + alturaPorPlanta * (e.alturaPlantas ?? 1));
+      }
+    });
+    return tejadoRect(huella, cota - 0.06, cubierta.pendiente);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantas, alturaPorPlanta, cubierta.tipo, cubierta.pendiente]);
 
