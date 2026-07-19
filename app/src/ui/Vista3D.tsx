@@ -25,7 +25,7 @@ import {
 import type { NormativaMunicipal } from '../normativa/schema';
 import { useStore } from '../state/store';
 import { resolverColision, type MuroColision } from './colisiones';
-import { ladosCubiertos, losaConHuecos, murosDeEstancia, tejadoRect } from './muros';
+import { ladosCubiertos, losaConHuecos, murosDeEstancia, tejadoCuatroAguas } from './muros';
 
 const LAT_DEFECTO = 40.5;
 const LNG_DEFECTO = -3.7;
@@ -319,7 +319,7 @@ function Escena({
         cota = Math.max(cota, i * alturaPorPlanta + alturaPorPlanta * (e.alturaPlantas ?? 1));
       }
     });
-    return tejadoRect(huella, cota - 0.06, cubierta.pendiente);
+    return tejadoCuatroAguas(huella, cota - 0.06, cubierta.pendiente);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantas, alturaPorPlanta, cubierta.tipo, cubierta.pendiente]);
 
@@ -461,7 +461,7 @@ function Escena({
             castShadow
             receiveShadow
           >
-            <meshStandardMaterial color="#a95f38" />
+            <meshStandardMaterial color="#a95f38" side={2} />
           </mesh>
         )}
       </group>
