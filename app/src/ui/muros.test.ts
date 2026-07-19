@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Estancia } from '../domain/types';
-import { ladosCubiertos, losaConHuecos } from './muros';
+import { ladosCubiertos, losaConHuecos, tejadoCuatroAguas } from './muros';
 
 const est = (parcial: Partial<Estancia>): Estancia => ({
   id: 'x',
@@ -64,5 +64,19 @@ describe('losa de forjado con huecos (vacío a doble altura)', () => {
     const con = losaConHuecos(rect, [{ x: 3, y: 4, ancho: 2, fondo: 3 }]).attributes
       .position.count;
     expect(con).toBeGreaterThan(sin);
+  });
+});
+
+describe('tejado a cuatro aguas', () => {
+  it('el caballete alcanza media luz por la tangente de la pendiente', () => {
+    // luz = min(ancho, fondo) = 6 ⇒ semiluz 3; a 45° la altura es 3.
+    const { altura } = tejadoCuatroAguas({ x: 0, y: 0, ancho: 10, fondo: 6 }, 3, 45, 0);
+    expect(altura).toBeCloseTo(3);
+  });
+
+  it('genera 6 caras (2 faldones largos + 2 testeros)', () => {
+    const { spec } = tejadoCuatroAguas({ x: 0, y: 0, ancho: 10, fondo: 6 }, 3, 30);
+    // 4 triángulos de los faldones largos + 2 de los testeros = 6 ⇒ 18 vértices.
+    expect(spec.geometria.attributes.position.count).toBe(18);
   });
 });

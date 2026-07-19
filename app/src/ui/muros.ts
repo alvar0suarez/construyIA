@@ -1,11 +1,17 @@
-import { ExtrudeGeometry, Path, Shape } from 'three';
+import {
+  BufferGeometry,
+  ExtrudeGeometry,
+  Float32BufferAttribute,
+  Path,
+  Shape,
+} from 'three';
 import type { Estancia, Lado, Rect } from '../domain/types';
 import { alturaTejado } from '../engine/cubierta';
 
 export const GROSOR_MURO = 0.12;
 
 export interface MuroSpec {
-  geometria: ExtrudeGeometry;
+  geometria: BufferGeometry;
   /** Posición del origen local del muro en el mundo (x, y, z). */
   posicion: [number, number, number];
   /** Rotación sobre Y. */
@@ -93,6 +99,84 @@ export function losaConHuecos(
     shape.holes.push(path);
   }
   return new ExtrudeGeometry(shape, { depth: grosor, bevelEnabled: false });
+}
+
+/**
+ * Tejado a cuatro aguas (con faldones en los cuatro lados) sobre un
+ * rectángulo. El caballete corre a lo largo del lado mayor, acortado media
+ * luz por cada extremo (donde arrancan los dos faldones de los testeros).
+ * Más propio de los chalés de la zona y recoge mejor los extremos que el de
+ * dos aguas. El alero sobresale `vuelo` metros por los cuatro lados.
+ *
+ * La geometría se construye en coordenadas de plano absolutas (x → X mundo,
+ * z → Z mundo; y = altura sobre la cornisa). Se renderiza con posición
+ * [0, cotaCornisa, 0] y sin rotación. Se usa DoubleSide al pintar, así que la
+ * orientación de las caras es indiferente.
+ */
+export function tejadoCuatroAguas(
+  rect: Rect,
+  cotaCornisa: number,
+  pendienteGrados: number,
+  vuelo = 0.4,
+): { spec: MuroSpec; altura: number } {
+  const r = {
+    x: rect.x - vuelo,
+    y: rect.y - vuelo,
+    ancho: rect.ancho + 2 * vuelo,
+    fondo: rect.fondo + 2 * vuelo,
+  };
+  const aLoLargoDeX = r.ancho >= r.fondo;
+  const luz = aLoLargoDeX ? r.fondo : r.ancho;
+  const h = (luz / 2) * Math.tan((pendienteGrados * Math.PI) / 180);
+
+  const x0 = r.x;
+  const x1 = r.x + r.ancho;
+  const z0 = r.y;
+  const z1 = r.y + r.fondo;
+
+  // Esquinas del alero (y = 0) y extremos del caballete (y = h).
+  const A: [number, number, number] = [x0, 0, z0];
+  const B: [number, number, number] = [x1, 0, z0];
+  const C: [number, number, number] = [x1, 0, z1];
+  const D: [number, number, number] = [x0, 0, z1];
+  let R1: [number, number, number];
+  let R2: [number, number, number];
+  if (aLoLargoDeX) {
+    const zc = r.y + r.fondo / 2;
+    R1 = [x0 + luz / 2, h, zc];
+    R2 = [x1 - luz / 2, h, zc];
+  } else {
+    const xc = r.x + r.ancho / 2;
+    R1 = [xc, h, z0 + luz / 2];
+    R2 = [xc, h, z1 - luz / 2];
+  }
+
+  const tris = aLoLargoDeX
+    ? [
+        // faldones largos (norte y sur)
+        A, B, R2, A, R2, R1,
+        D, C, R2, D, R2, R1,
+        // faldones de los testeros (este y oeste)
+        A, D, R1,
+        B, C, R2,
+      ]
+    : [
+        // faldones largos (este y oeste)
+        A, D, R2, A, R2, R1,
+        B, C, R2, B, R2, R1,
+        // faldones de los testeros (norte y sur)
+        A, B, R1,
+        D, C, R2,
+      ];
+
+  const geometria = new BufferGeometry();
+  geometria.setAttribute(
+    'position',
+    new Float32BufferAttribute(tris.flat(), 3),
+  );
+  geometria.computeVertexNormals();
+
+  return { spec: { geometria, posicion: [0, cotaCornisa, 0], rotacionY: 0 }, altura: h };
 }
 
 /** Tejado a dos aguas sobre una estancia (compatibilidad). */
