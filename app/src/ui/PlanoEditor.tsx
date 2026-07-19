@@ -452,18 +452,39 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
           />
         ))}
 
-        {/* Estancias de la planta activa */}
-        {estancias.map((e) => {
+        {/* Estancias de la planta activa. Las posteriores recortan a las
+            anteriores (máscara) para que los solapes se vean en cuña limpia
+            en vez de muros pisados. */}
+        {estancias.map((e, idx) => {
           const def = tipoEstancia(e.tipo);
           const sel = e.id === seleccionId;
+          const recortes = estancias
+            .slice(idx + 1)
+            .filter(
+              (o) =>
+                o.x < e.x + e.ancho &&
+                o.x + o.ancho > e.x &&
+                o.y < e.y + e.fondo &&
+                o.y + o.fondo > e.y,
+            );
+          const maskId = `recorte-${e.id}`;
           return (
             <g key={e.id}>
+              {recortes.length > 0 && (
+                <mask id={maskId} maskUnits="userSpaceOnUse">
+                  <rect x={e.x} y={e.y} width={e.ancho} height={e.fondo} fill="white" />
+                  {recortes.map((o) => (
+                    <rect key={o.id} x={o.x} y={o.y} width={o.ancho} height={o.fondo} fill="black" />
+                  ))}
+                </mask>
+              )}
               <rect
                 x={e.x}
                 y={e.y}
                 width={e.ancho}
                 height={e.fondo}
                 fill={def.color}
+                mask={recortes.length > 0 ? `url(#${maskId})` : undefined}
                 className={`svg-estancia${sel ? ' seleccionada' : ''}`}
                 onPointerDown={(ev) => {
                   ev.stopPropagation();
