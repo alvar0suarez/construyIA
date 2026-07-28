@@ -46,12 +46,12 @@ de ser fácil.
       en 3D y animación del día completo (▶).
 - [x] Snapping magnético entre estancias (imán a bordes vecinos y a la
       envolvente al mover/redimensionar).
-- [x] **Evitar solapes** (opción activada por defecto): al mover una estancia
-      no se monta sobre otra de la misma planta, se coloca pegada; al
-      redimensionar no crece dentro de una vecina. Botón «🧲 sin solapes» en
-      la barra del plano para activarlo/desactivarlo (se recuerda entre
-      sesiones).
-- [ ] Estancias poligonales (plantas en L) — fase 2 de la exploración.
+- [x] **Recortar solapes** (opción activada por defecto): al superponer dos
+      estancias, la de encima recorta a la de debajo; juntas forman una
+      silueta en L (no dos cuadrados montados) y la estancia recortada declara
+      su superficie real (rectángulo menos lo cubierto). Botón «✂️ recortar
+      solapes» en la barra del plano para activarlo/desactivarlo (se recuerda
+      entre sesiones). Así se dibujan plantas en L combinando rectángulos.
 - [x] **Recomendaciones bioclimáticas**: estancia habitable sin ventanas o
       con < 10 % de superficie acristalada, salón con ventanas solo al
       norte, exceso de vidrio al oeste (sobrecalentamiento).
@@ -122,10 +122,11 @@ de ser fácil.
       doble altura); altura por estancia en el modelo, reflejada en la
       cornisa/cumbrera del motor y en el 3D. El forjado de la planta superior
       se perfora sobre el vacío para no tapar el hueco a doble altura.
-- [x] **Solapes en cuña (2D)**: cuando dos estancias se solapan, la posterior
-      recorta a la anterior con una máscara SVG para que el borde se vea en
-      cuña limpia en vez de muros pisados. El motor avisa (regla `solape`) del
-      área solapada por planta. (Pendiente: recorte equivalente en 3D.)
+- [x] **Solapes recortados (2D)**: cuando dos estancias se solapan, la
+      posterior recorta a la anterior con una máscara SVG y la anterior
+      declara su superficie real; juntas forman una silueta en L limpia.
+      Opción «✂️ recortar solapes» del editor. (Pendiente: recorte equivalente
+      en 3D.)
 - [ ] Limahoyas y faldones para plantas en L (el tejado a cuatro aguas actual
       se apoya en la huella rectangular; una planta en L necesita descomponer
       la cubierta por alas).
