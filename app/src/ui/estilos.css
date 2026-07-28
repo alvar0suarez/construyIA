@@ -160,6 +160,9 @@ details summary {
   display: flex; justify-content: space-between; align-items: center; gap: 8px;
 }
 .reencuadrar { font-size: 11px; padding: 3px 9px; }
+.reencuadrar.activa {
+  background: var(--verde-900); color: #fff; border-color: var(--verde-900);
+}
 /* touch-action pan-y: un dedo sobre el fondo hace scroll vertical de la
    página (en móvil el editor es alto y hay que poder deslizar); los
    elementos interactivos lo sobreescriben a `none` para arrastrarlos. */
