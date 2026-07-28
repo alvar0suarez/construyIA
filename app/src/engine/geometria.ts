@@ -107,6 +107,46 @@ export function compartenPared(
 }
 
 /**
+ * Reubica `r` para que no solape con ninguno de los `obstaculos`,
+ * empujándolo por el eje de menor penetración y manteniéndolo dentro de los
+ * límites de la parcela. Devuelve la nueva posición (x, y); las dimensiones
+ * no cambian. Iterativo: resuelve solapes en cascada de disposiciones
+ * sencillas. Si no cabe, deja el mínimo solape posible.
+ */
+export function resolverColocacion(
+  r: Rect,
+  obstaculos: Rect[],
+  limites: { ancho: number; fondo: number },
+): { x: number; y: number } {
+  const eps = 1e-4;
+  let x = r.x;
+  let y = r.y;
+  for (let iter = 0; iter < 12; iter++) {
+    let huboSolape = false;
+    for (const o of obstaculos) {
+      const penX = Math.min(x + r.ancho, o.x + o.ancho) - Math.max(x, o.x);
+      const penY = Math.min(y + r.fondo, o.y + o.fondo) - Math.max(y, o.y);
+      if (penX > eps && penY > eps) {
+        huboSolape = true;
+        if (penX <= penY) {
+          const centroR = x + r.ancho / 2;
+          const centroO = o.x + o.ancho / 2;
+          x += centroR < centroO ? -penX : penX;
+        } else {
+          const centroR = y + r.fondo / 2;
+          const centroO = o.y + o.fondo / 2;
+          y += centroR < centroO ? -penY : penY;
+        }
+      }
+    }
+    x = Math.min(Math.max(0, x), Math.max(0, limites.ancho - r.ancho));
+    y = Math.min(Math.max(0, y), Math.max(0, limites.fondo - r.fondo));
+    if (!huboSolape) break;
+  }
+  return { x, y };
+}
+
+/**
  * Área de la unión de rectángulos, exacta, por compresión de coordenadas.
  * Se usa para la ocupación: dos estancias solapadas no ocupan el doble.
  */

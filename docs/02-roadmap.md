@@ -44,8 +44,13 @@ de ser fácil.
       longitud + huso CET/CEST), amanecer/atardecer y horas de sol del día
       por coordenadas del municipio, arco de la trayectoria solar visible
       en 3D y animación del día completo (▶).
-- [ ] Snapping magnético entre estancias y pared compartida (ver
-      [exploración del editor de muros](08-editor-muros.md)).
+- [x] Snapping magnético entre estancias (imán a bordes vecinos y a la
+      envolvente al mover/redimensionar).
+- [x] **Evitar solapes** (opción activada por defecto): al mover una estancia
+      no se monta sobre otra de la misma planta, se coloca pegada; al
+      redimensionar no crece dentro de una vecina. Botón «🧲 sin solapes» en
+      la barra del plano para activarlo/desactivarlo (se recuerda entre
+      sesiones).
 - [ ] Estancias poligonales (plantas en L) — fase 2 de la exploración.
 - [x] **Recomendaciones bioclimáticas**: estancia habitable sin ventanas o
       con < 10 % de superficie acristalada, salón con ventanas solo al
