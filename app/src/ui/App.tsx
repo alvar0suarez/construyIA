@@ -2,11 +2,13 @@ import { Suspense, lazy, useDeferredValue, useEffect, useMemo, useState } from '
 import { evaluar } from '../engine/cumplimiento';
 import { getNormativa, type AjustesNormativa } from '../normativa/registry';
 import { useStore } from '../state/store';
+import { Asistente } from './Asistente';
 import { Cabecera } from './Cabecera';
 import { Cobertura } from './Cobertura';
 import { Inicio } from './Inicio';
 import { PanelCumplimiento } from './PanelCumplimiento';
 import { PanelLateral } from './PanelLateral';
+import { Pasos, PasosNav, type Paso } from './Pasos';
 import { PlanoEditor } from './PlanoEditor';
 
 const Vista3D = lazy(() =>
@@ -31,7 +33,11 @@ export function App() {
       ? 'diseno'
       : 'inicio',
   );
-  const [vista, setVista] = useState<'plano' | '3d'>('plano');
+  const [paso, setPaso] = useState<Paso>(() =>
+    Object.values(useStore.getState().proyecto.plantas).some((p) => p.length > 0)
+      ? 'habitaciones'
+      : 'parcela',
+  );
 
   useEffect(() => {
     const onTecla = (e: KeyboardEvent) => {
@@ -71,33 +77,53 @@ export function App() {
           <Cobertura />
         </div>
       ) : (
-        <div className="cuerpo">
-          <PanelLateral normativa={normativa} />
-          <main className="lienzo">
-            <div className="selector-vista">
-              <button
-                className={vista === 'plano' ? 'activa' : ''}
-                onClick={() => setVista('plano')}
-              >
-                Plano 2D
-              </button>
-              <button
-                className={vista === '3d' ? 'activa' : ''}
-                onClick={() => setVista('3d')}
-              >
-                Vista 3D
-              </button>
-            </div>
-            {vista === 'plano' ? (
-              <PlanoEditor normativa={normativa} />
-            ) : (
-              <Suspense fallback={<div className="cargando">Cargando vista 3D…</div>}>
-                <Vista3D normativa={normativa} />
-              </Suspense>
+        <>
+          <Pasos paso={paso} setPaso={setPaso} />
+          <div className="cuerpo">
+            {paso === 'parcela' && (
+              <>
+                <PanelLateral normativa={normativa} seccion="parcela" />
+                <main className="lienzo">
+                  <PlanoEditor normativa={normativa} />
+                  <PasosNav paso={paso} setPaso={setPaso} />
+                </main>
+              </>
             )}
-          </main>
-          <PanelCumplimiento evaluacion={evaluacion} normativa={normativa} />
-        </div>
+            {paso === 'habitaciones' && (
+              <>
+                <PanelLateral normativa={normativa} seccion="distribucion" />
+                <main className="lienzo">
+                  <PlanoEditor normativa={normativa} />
+                  <PasosNav paso={paso} setPaso={setPaso} />
+                </main>
+                <PanelCumplimiento
+                  evaluacion={evaluacion}
+                  normativa={normativa}
+                  conAsistente={false}
+                />
+              </>
+            )}
+            {paso === '3d' && (
+              <main className="lienzo">
+                <Suspense fallback={<div className="cargando">Cargando vista 3D…</div>}>
+                  <Vista3D normativa={normativa} />
+                </Suspense>
+                <PasosNav paso={paso} setPaso={setPaso} />
+              </main>
+            )}
+            {paso === 'asistente' && (
+              <>
+                <main className="lienzo">
+                  <PlanoEditor normativa={normativa} />
+                  <PasosNav paso={paso} setPaso={setPaso} />
+                </main>
+                <aside className="panel-cumplimiento">
+                  <Asistente normativa={normativa} />
+                </aside>
+              </>
+            )}
+          </div>
+        </>
       )}
       <footer className="pie">
         ⚠️ Herramienta orientativa y <strong>no vinculante</strong>. Verifica
