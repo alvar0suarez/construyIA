@@ -462,15 +462,15 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
           />
         ))}
 
-        {/* Estancias de la planta activa. Las posteriores recortan a las
-            anteriores (máscara) para que los solapes se vean en cuña limpia
-            en vez de muros pisados. */}
+        {/* Estancias de la planta activa. La última que se coloca (la de
+            encima) es la que se recorta contra las anteriores, de modo que la
+            que ya estaba queda entera y la nueva forma la cuña/L. */}
         {estancias.map((e, idx) => {
           const def = tipoEstancia(e.tipo);
           const sel = e.id === seleccionId;
           const recortes = recortarSolapes
             ? estancias
-                .slice(idx + 1)
+                .slice(0, idx)
                 .filter(
                   (o) =>
                     o.x < e.x + e.ancho &&
@@ -479,7 +479,8 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
                     o.y + o.fondo > e.y,
                 )
             : [];
-          // Superficie real: si la recortan estancias de encima, resta lo cubierto.
+          // Superficie real: si esta estancia se recorta contra las anteriores,
+          // resta lo que solapa con ellas.
           const areaReal = recortes.length > 0 ? areaVisible(e, recortes) : e.ancho * e.fondo;
           const maskId = `recorte-${e.id}`;
           return (
