@@ -3,9 +3,9 @@ import type { Estancia, PlantaId } from '../domain/types';
 import { PLANTAS } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
 import {
+  areaVisible,
   dimensionesParcela,
   envolventeEdificable,
-  resolverColocacion,
   retranqueoPorLado,
 } from '../engine/geometria';
 import type { NormativaMunicipal } from '../normativa/schema';
@@ -87,8 +87,8 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
   const updateHueco = useStore((s) => s.updateHueco);
   const removeHueco = useStore((s) => s.removeHueco);
   const marcarHistoria = useStore((s) => s.marcarHistoria);
-  const evitarSolapes = useStore((s) => s.evitarSolapes);
-  const setEvitarSolapes = useStore((s) => s.setEvitarSolapes);
+  const recortarSolapes = useStore((s) => s.recortarSolapes);
+  const setRecortarSolapes = useStore((s) => s.setRecortarSolapes);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [arrastre, setArrastre] = useState<Arrastre | null>(null);
@@ -265,9 +265,6 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
     // Bordes de otras estancias (esta planta y las demás) y de la envolvente,
     // como objetivos magnéticos para pegar y alinear.
     const vecinas = [...estancias.filter((o) => o.id !== est.id), ...fantasmas];
-    // Solo las estancias de la MISMA planta bloquean solapes (una habitación
-    // de otra planta puede quedar encima, es normal).
-    const mismasPlanta = estancias.filter((o) => o.id !== est.id);
     if (arrastre.modo === 'mover') {
       const candX = [envolvente.x, envolvente.x + envolvente.ancho - est.ancho];
       const candY = [envolvente.y, envolvente.y + envolvente.fondo - est.fondo];
@@ -275,43 +272,19 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
         candX.push(o.x, o.x + o.ancho, o.x - est.ancho, o.x + o.ancho - est.ancho);
         candY.push(o.y, o.y + o.fondo, o.y - est.fondo, o.y + o.fondo - est.fondo);
       }
-      let nx = iman(snap(Math.min(Math.max(p.x - arrastre.dx, 0), dims.ancho - est.ancho)), candX);
-      let ny = iman(snap(Math.min(Math.max(p.y - arrastre.dy, 0), dims.fondo - est.fondo)), candY);
-      if (evitarSolapes) {
-        const pos = resolverColocacion(
-          { ...est, x: nx, y: ny },
-          mismasPlanta,
-          { ancho: dims.ancho, fondo: dims.fondo },
-        );
-        nx = pos.x;
-        ny = pos.y;
-      }
-      updateEstancia(est.id, { x: nx, y: ny });
+      updateEstancia(est.id, {
+        x: iman(snap(Math.min(Math.max(p.x - arrastre.dx, 0), dims.ancho - est.ancho)), candX),
+        y: iman(snap(Math.min(Math.max(p.y - arrastre.dy, 0), dims.fondo - est.fondo)), candY),
+      });
     } else {
       const candAncho = vecinas.flatMap((o) => [o.x - est.x, o.x + o.ancho - est.x, o.ancho]);
       candAncho.push(envolvente.x + envolvente.ancho - est.x);
       const candFondo = vecinas.flatMap((o) => [o.y - est.y, o.y + o.fondo - est.y, o.fondo]);
       candFondo.push(envolvente.y + envolvente.fondo - est.y);
-      let nAncho = iman(snap(Math.min(Math.max(p.x - est.x, 0.5), dims.ancho - est.x)), candAncho);
-      let nFondo = iman(snap(Math.min(Math.max(p.y - est.y, 0.5), dims.fondo - est.y)), candFondo);
-      if (evitarSolapes) {
-        // El asa está abajo-derecha: no dejar que la estancia crezca dentro de
-        // una vecina que quede a su derecha o por debajo.
-        const eps = 1e-4;
-        for (const o of mismasPlanta) {
-          const solapaY = o.y < est.y + nFondo - eps && o.y + o.fondo > est.y + eps;
-          if (solapaY && o.x + eps >= est.x && o.x < est.x + nAncho) {
-            nAncho = Math.min(nAncho, o.x - est.x);
-          }
-          const solapaX = o.x < est.x + nAncho - eps && o.x + o.ancho > est.x + eps;
-          if (solapaX && o.y + eps >= est.y && o.y < est.y + nFondo) {
-            nFondo = Math.min(nFondo, o.y - est.y);
-          }
-        }
-        nAncho = Math.max(0.5, nAncho);
-        nFondo = Math.max(0.5, nFondo);
-      }
-      updateEstancia(est.id, { ancho: nAncho, fondo: nFondo });
+      updateEstancia(est.id, {
+        ancho: iman(snap(Math.min(Math.max(p.x - est.x, 0.5), dims.ancho - est.x)), candAncho),
+        fondo: iman(snap(Math.min(Math.max(p.y - est.y, 0.5), dims.fondo - est.y)), candFondo),
+      });
     }
   };
 
@@ -334,11 +307,11 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
         </span>
         <span className="plano-acciones">
           <button
-            className={`reencuadrar${evitarSolapes ? ' activa' : ''}`}
-            title="Cuando está activo, al mover una habitación no se solapa con las demás: se coloca pegada a ellas"
-            onClick={() => setEvitarSolapes(!evitarSolapes)}
+            className={`reencuadrar${recortarSolapes ? ' activa' : ''}`}
+            title="Cuando está activo, si dos habitaciones se solapan la parte común se recorta: juntas forman una silueta en L, no dos cuadrados montados"
+            onClick={() => setRecortarSolapes(!recortarSolapes)}
           >
-            {evitarSolapes ? '🧲 sin solapes' : '⬚ solapes libres'}
+            {recortarSolapes ? '✂️ recortar solapes' : '⬚ cuadrados sueltos'}
           </button>
           <button
             className="reencuadrar"
@@ -495,15 +468,19 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
         {estancias.map((e, idx) => {
           const def = tipoEstancia(e.tipo);
           const sel = e.id === seleccionId;
-          const recortes = estancias
-            .slice(idx + 1)
-            .filter(
-              (o) =>
-                o.x < e.x + e.ancho &&
-                o.x + o.ancho > e.x &&
-                o.y < e.y + e.fondo &&
-                o.y + o.fondo > e.y,
-            );
+          const recortes = recortarSolapes
+            ? estancias
+                .slice(idx + 1)
+                .filter(
+                  (o) =>
+                    o.x < e.x + e.ancho &&
+                    o.x + o.ancho > e.x &&
+                    o.y < e.y + e.fondo &&
+                    o.y + o.fondo > e.y,
+                )
+            : [];
+          // Superficie real: si la recortan estancias de encima, resta lo cubierto.
+          const areaReal = recortes.length > 0 ? areaVisible(e, recortes) : e.ancho * e.fondo;
           const maskId = `recorte-${e.id}`;
           return (
             <g key={e.id}>
@@ -547,7 +524,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
                   y={e.y + e.fondo / 2 + 0.75}
                   className="svg-etiqueta svg-etiqueta-area"
                 >
-                  {(e.ancho * e.fondo).toFixed(1)} m²
+                  {areaReal.toFixed(1)} m²
                   {(e.alturaPlantas ?? 1) > 1 ? ' · doble altura' : ''}
                 </text>
               )}
@@ -641,9 +618,9 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
         <div className="plano-ayuda">
           <span>
             👆 Toca una habitación para seleccionarla y arrástrala para colocarla.
-            {evitarSolapes
-              ? ' Con «🧲 sin solapes» activado, las habitaciones se pegan unas a otras sin montarse.'
-              : ' Activa «sin solapes» arriba para que las habitaciones no se monten.'}
+            {recortarSolapes
+              ? ' Con «✂️ recortar solapes» activado, si superpones dos habitaciones la parte común se recorta y juntas forman una silueta en L.'
+              : ' Activa «recortar solapes» arriba para que al superponer habitaciones formen siluetas en L en vez de cuadrados montados.'}
           </span>
         </div>
       )}

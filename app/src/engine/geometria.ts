@@ -106,44 +106,27 @@ export function compartenPared(
   return (tocanEnX && solapeY >= minSolape) || (tocanEnY && solapeX >= minSolape);
 }
 
+/** Rectángulo de intersección de dos rectángulos, o null si no se tocan. */
+export function interseccionRect(a: Rect, b: Rect): Rect | null {
+  const x0 = Math.max(a.x, b.x);
+  const y0 = Math.max(a.y, b.y);
+  const x1 = Math.min(a.x + a.ancho, b.x + b.ancho);
+  const y1 = Math.min(a.y + a.fondo, b.y + b.fondo);
+  if (x1 - x0 <= 0 || y1 - y0 <= 0) return null;
+  return { x: x0, y: y0, ancho: x1 - x0, fondo: y1 - y0 };
+}
+
 /**
- * Reubica `r` para que no solape con ninguno de los `obstaculos`,
- * empujándolo por el eje de menor penetración y manteniéndolo dentro de los
- * límites de la parcela. Devuelve la nueva posición (x, y); las dimensiones
- * no cambian. Iterativo: resuelve solapes en cascada de disposiciones
- * sencillas. Si no cabe, deja el mínimo solape posible.
+ * Área realmente visible de una estancia cuando las que se dibujan por
+ * encima (`encima`) le recortan la parte solapada. Es su rectángulo menos la
+ * unión de los trozos cubiertos, así una estancia recortada en L declara su
+ * superficie real y no la del rectángulo completo.
  */
-export function resolverColocacion(
-  r: Rect,
-  obstaculos: Rect[],
-  limites: { ancho: number; fondo: number },
-): { x: number; y: number } {
-  const eps = 1e-4;
-  let x = r.x;
-  let y = r.y;
-  for (let iter = 0; iter < 12; iter++) {
-    let huboSolape = false;
-    for (const o of obstaculos) {
-      const penX = Math.min(x + r.ancho, o.x + o.ancho) - Math.max(x, o.x);
-      const penY = Math.min(y + r.fondo, o.y + o.fondo) - Math.max(y, o.y);
-      if (penX > eps && penY > eps) {
-        huboSolape = true;
-        if (penX <= penY) {
-          const centroR = x + r.ancho / 2;
-          const centroO = o.x + o.ancho / 2;
-          x += centroR < centroO ? -penX : penX;
-        } else {
-          const centroR = y + r.fondo / 2;
-          const centroO = o.y + o.fondo / 2;
-          y += centroR < centroO ? -penY : penY;
-        }
-      }
-    }
-    x = Math.min(Math.max(0, x), Math.max(0, limites.ancho - r.ancho));
-    y = Math.min(Math.max(0, y), Math.max(0, limites.fondo - r.fondo));
-    if (!huboSolape) break;
-  }
-  return { x, y };
+export function areaVisible(e: Rect, encima: Rect[]): number {
+  const trozos = encima
+    .map((o) => interseccionRect(e, o))
+    .filter((r): r is Rect => r !== null);
+  return Math.max(0, areaRect(e) - areaUnion(trozos));
 }
 
 /**

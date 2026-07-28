@@ -40,8 +40,9 @@ interface AppState {
   plantaActiva: PlantaId;
   seleccionId: string | null;
   seleccionHuecoId: string | null;
-  /** Al mover/redimensionar en 2D, evita que las estancias se solapen. */
-  evitarSolapes: boolean;
+  /** En el plano 2D, recorta la parte solapada de las estancias (siluetas en
+   *  L en vez de cuadrados montados). */
+  recortarSolapes: boolean;
   pasado: Proyecto[];
   futuro: Proyecto[];
 
@@ -59,7 +60,7 @@ interface AppState {
   setPlantaActiva: (p: PlantaId) => void;
   setSeleccion: (id: string | null) => void;
   setSeleccionHueco: (id: string | null) => void;
-  setEvitarSolapes: (v: boolean) => void;
+  setRecortarSolapes: (v: boolean) => void;
 
   /** Guarda un punto de restauración ANTES de una mutación o gesto de arrastre. */
   marcarHistoria: () => void;
@@ -107,7 +108,7 @@ export const useStore = create<AppState>()(
       plantaActiva: 'baja',
       seleccionId: null,
       seleccionHuecoId: null,
-      evitarSolapes: true,
+      recortarSolapes: true,
       pasado: [],
       futuro: [],
 
@@ -175,7 +176,7 @@ export const useStore = create<AppState>()(
 
       setSeleccion: (seleccionId) => set({ seleccionId, seleccionHuecoId: null }),
       setSeleccionHueco: (seleccionHuecoId) => set({ seleccionHuecoId }),
-      setEvitarSolapes: (evitarSolapes) => set({ evitarSolapes }),
+      setRecortarSolapes: (recortarSolapes) => set({ recortarSolapes }),
 
       marcarHistoria: () =>
         set((s) => ({
@@ -382,7 +383,7 @@ export const useStore = create<AppState>()(
       partialize: (s) => ({
         proyecto: s.proyecto,
         normativaPersonalizada: s.normativaPersonalizada,
-        evitarSolapes: s.evitarSolapes,
+        recortarSolapes: s.recortarSolapes,
       }),
     },
   ),

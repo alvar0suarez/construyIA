@@ -1,47 +1,44 @@
 import { describe, expect, it } from 'vitest';
-import { areaInterseccion, resolverColocacion } from './geometria';
+import { areaVisible, interseccionRect } from './geometria';
 
-const limites = { ancho: 20, fondo: 20 };
-
-describe('resolverColocacion (evitar solapes)', () => {
-  it('deja la posición igual si no hay solape', () => {
-    const r = { x: 2, y: 2, ancho: 3, fondo: 3 };
-    const pos = resolverColocacion(r, [{ x: 10, y: 10, ancho: 3, fondo: 3 }], limites);
-    expect(pos).toEqual({ x: 2, y: 2 });
+describe('interseccionRect', () => {
+  it('devuelve el solape de dos rectángulos', () => {
+    const r = interseccionRect(
+      { x: 0, y: 0, ancho: 4, fondo: 4 },
+      { x: 2, y: 2, ancho: 4, fondo: 4 },
+    );
+    expect(r).toEqual({ x: 2, y: 2, ancho: 2, fondo: 2 });
   });
 
-  it('separa una estancia que se solapa con otra', () => {
-    const movida = { x: 4, y: 4, ancho: 4, fondo: 4 };
-    const fija = { x: 2, y: 2, ancho: 4, fondo: 4 };
-    const pos = resolverColocacion(movida, [fija], limites);
-    const resultante = { ...movida, ...pos };
-    expect(areaInterseccion(resultante, fija)).toBeCloseTo(0);
+  it('devuelve null si no se tocan', () => {
+    expect(
+      interseccionRect({ x: 0, y: 0, ancho: 2, fondo: 2 }, { x: 5, y: 5, ancho: 2, fondo: 2 }),
+    ).toBeNull();
+  });
+});
+
+describe('areaVisible (recorte de solapes)', () => {
+  const e = { x: 0, y: 0, ancho: 4, fondo: 4 }; // 16 m²
+
+  it('sin nada encima, el área es la del rectángulo', () => {
+    expect(areaVisible(e, [])).toBeCloseTo(16);
   });
 
-  it('empuja por el eje de menor penetración (pequeño solape en X → sale por X)', () => {
-    // Solapa 1 en X y 3 en Y ⇒ debe salir por X (pegándose al borde derecho).
-    const movida = { x: 5, y: 0, ancho: 4, fondo: 4 };
-    const fija = { x: 2, y: 1, ancho: 4, fondo: 4 };
-    const pos = resolverColocacion(movida, [fija], limites);
-    expect(pos.x).toBeCloseTo(6); // fija.x + fija.ancho
-    expect(pos.y).toBeCloseTo(0);
+  it('resta el trozo cubierto por una estancia superior (silueta en L)', () => {
+    // Encima ocupa la esquina 2×2 = 4 m² ⇒ visible 12 m².
+    expect(areaVisible(e, [{ x: 2, y: 2, ancho: 2, fondo: 2 }])).toBeCloseTo(12);
   });
 
-  it('resuelve solapes con varias vecinas', () => {
-    const movida = { x: 3, y: 3, ancho: 4, fondo: 4 };
-    const vecinas = [
-      { x: 2, y: 2, ancho: 3, fondo: 3 },
-      { x: 6, y: 2, ancho: 3, fondo: 3 },
+  it('no cuenta dos veces el solape de varias estancias superiores', () => {
+    // Dos rectángulos encima que se solapan entre sí sobre la misma esquina.
+    const encima = [
+      { x: 2, y: 2, ancho: 2, fondo: 2 },
+      { x: 3, y: 2, ancho: 1, fondo: 2 }, // dentro del anterior
     ];
-    const pos = resolverColocacion(movida, vecinas, limites);
-    const resultante = { ...movida, ...pos };
-    for (const v of vecinas) expect(areaInterseccion(resultante, v)).toBeLessThan(0.01);
+    expect(areaVisible(e, encima)).toBeCloseTo(12);
   });
 
-  it('mantiene la estancia dentro de la parcela', () => {
-    const movida = { x: 17, y: 17, ancho: 4, fondo: 4 };
-    const pos = resolverColocacion(movida, [], limites);
-    expect(pos.x).toBeLessThanOrEqual(limites.ancho - movida.ancho + 1e-6);
-    expect(pos.y).toBeLessThanOrEqual(limites.fondo - movida.fondo + 1e-6);
+  it('un tapado total deja área 0', () => {
+    expect(areaVisible(e, [{ x: -1, y: -1, ancho: 6, fondo: 6 }])).toBeCloseTo(0);
   });
 });
