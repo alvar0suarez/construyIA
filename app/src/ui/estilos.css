@@ -94,6 +94,41 @@ button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
 }
 .panel-cumplimiento { width: 348px; }
 
+/* ─── Pasos del diseño (menú guiado) ────────────────────────────────── */
+.pasos {
+  display: flex; gap: 6px; padding: 10px 16px; overflow-x: auto;
+  border-bottom: 1px solid var(--borde); background: var(--panel);
+}
+.paso {
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 7px 14px; border-radius: 999px; border: 1px solid var(--borde);
+  background: var(--crema); color: var(--tinta-suave); font-weight: 600;
+  font-size: 13px; cursor: pointer;
+}
+.paso:hover { border-color: var(--verde-500); }
+.paso-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; background: var(--borde);
+  color: var(--tinta); font-size: 12px; flex: none;
+}
+.paso-nombre { display: inline-flex; align-items: center; gap: 5px; }
+.paso.activo { background: var(--verde-900); color: #fff; border-color: var(--verde-900); }
+.paso.activo .paso-num { background: rgba(255, 255, 255, 0.25); color: #fff; }
+.paso.hecho { color: var(--verde-700); border-color: var(--verde-500); }
+.paso.hecho .paso-num { background: var(--verde-500); color: #fff; }
+
+.pasos-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; margin-top: 12px;
+}
+.paso-btn {
+  padding: 11px 18px; border-radius: 10px; border: 1px solid var(--borde);
+  background: var(--panel); font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.paso-btn.primario {
+  background: var(--verde-900); color: #fff; border-color: var(--verde-900);
+}
+
 section, .seccion {
   background: var(--panel); border: 1px solid var(--borde);
   border-radius: var(--radio); padding: 12px 14px; box-shadow: var(--sombra-s);

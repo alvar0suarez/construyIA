@@ -30,9 +30,12 @@ function Fila({ r }: { r: ResultadoRegla }) {
 export function PanelCumplimiento({
   evaluacion,
   normativa,
+  conAsistente = true,
 }: {
   evaluacion: Evaluacion;
   normativa: NormativaMunicipal;
+  /** El asistente IA tiene su propio paso; se oculta aquí en ese caso. */
+  conAsistente?: boolean;
 }) {
   const { metricas: m, normativa: reglas, recomendaciones } = evaluacion;
   const errores = reglas.filter((r) => r.nivel === 'error').length;
@@ -91,7 +94,7 @@ export function PanelCumplimiento({
         </Seccion>
       )}
 
-      <Asistente normativa={normativa} />
+      {conAsistente && <Asistente normativa={normativa} />}
     </aside>
   );
 }

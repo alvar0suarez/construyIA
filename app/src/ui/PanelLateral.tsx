@@ -21,7 +21,16 @@ const ETIQUETA_VERIFICACION: Record<NormativaMunicipal['verificacion'], string> 
   personalizada: '✏️ personalizada',
 };
 
-export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
+export function PanelLateral({
+  normativa,
+  seccion = 'todo',
+}: {
+  normativa: NormativaMunicipal;
+  /** Qué grupo de ajustes mostrar (para el diseño por pasos). */
+  seccion?: 'todo' | 'parcela' | 'distribucion';
+}) {
+  const verParcela = seccion === 'todo' || seccion === 'parcela';
+  const verDistribucion = seccion === 'todo' || seccion === 'distribucion';
   const parcela = useStore((s) => s.proyecto.parcela);
   const normativaId = useStore((s) => s.proyecto.normativaId);
   const ajustes = useStore((s) => s.proyecto.ajustesNormativa?.[s.proyecto.normativaId]);
@@ -56,6 +65,7 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
 
   return (
     <aside className="panel-lateral">
+      {verParcela && (
       <Seccion titulo="Normativa" abiertaEnMovil>
         <select
           value={normativaId}
@@ -104,7 +114,9 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
           </details>
         )}
       </Seccion>
+      )}
 
+      {verParcela && (
       <Seccion titulo="Parcela">
         <div className="grid-normativa">
           <label>Lado norte (m)<input {...numero(parcela.norte, (n) => setParcela({ norte: n }))} /></label>
@@ -153,7 +165,10 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
           )}
         </div>
       </Seccion>
+      )}
 
+      {verDistribucion && (
+      <>
       <Seccion titulo="Planta" abiertaEnMovil>
         <div className="selector-planta">
           {PLANTAS.map((p) => (
@@ -184,6 +199,8 @@ export function PanelLateral({ normativa }: { normativa: NormativaMunicipal }) {
           ))}
         </div>
       </Seccion>
+      </>
+      )}
     </aside>
   );
 }

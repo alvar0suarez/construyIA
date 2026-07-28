@@ -16,6 +16,13 @@ repositorio, útil para comparar parcelas y bocetar.
 - [x] Motor de cumplimiento: retranqueos, ocupación, edificabilidad, altura, nº de plantas.
 - [x] Recomendaciones: superficies mínimas por estancia, ratio dormitorios/baños, plazas de garaje, escalera si hay planta alta.
 - [x] Persistencia en localStorage + exportar/importar proyecto JSON (para compartir con la familia).
+- [x] **Menú por pasos** (diseño guiado): la página de diseño se recorre en
+      cuatro pasos — 1 Parcela, 2 Habitaciones, 3 Ver en 3D, 4 Asistente — con
+      barra de progreso y botones anterior/siguiente, para que sea fácil de
+      usar por alguien que entra por primera vez.
+- [x] Corrección: la web salía en blanco por el service worker (servía un
+      index.html cacheado que apuntaba a assets con hash ya inexistentes);
+      ahora el HTML va a red primero y la caché sube a v2.
 - [x] Vista 3D del volumen (three.js): estancias extruidas por planta, sótano translúcido y "jaula" de la envolvente edificable hasta la altura máxima.
 - [x] Página de **cobertura de normativa**: mapa de España (provincias, es-atlas/IGN) con los municipios cargados, y tabla de auditoría pública (municipio, zona, estado de verificación, fecha de revisión, fuentes).
 - [x] Retranqueo de piscina a linderos como parámetro opcional de normativa.
