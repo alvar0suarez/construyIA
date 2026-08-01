@@ -1,15 +1,18 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ACESFilmicToneMapping,
   BoxGeometry,
   BufferGeometry,
   EdgesGeometry,
   Line,
   LineBasicMaterial,
+  PMREMGenerator,
   Vector3,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CUBIERTA_DEFECTO, PLANTAS, type PlantaId } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
 import { dimensionesParcela, envolventeEdificable } from '../engine/geometria';
@@ -38,6 +41,27 @@ const SIN_MUROS = new Set(['piscina', 'terraza', 'porche']);
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 type Modo = 'orbita' | 'interior';
+
+/**
+ * Iluminación por entorno (IBL) con three puro: genera un mapa PMREM a partir
+ * de RoomEnvironment (un estudio neutro) y lo usa como `scene.environment`.
+ * Da luz ambiental suave y reflejos realistas a todos los materiales PBR sin
+ * añadir dependencias ni HDRIs externos.
+ */
+function IluminacionEntorno() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    const pmrem = new PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = env.texture;
+    return () => {
+      scene.environment = null;
+      env.texture.dispose();
+      pmrem.dispose();
+    };
+  }, [gl, scene]);
+  return null;
+}
 
 function ControlesOrbita({ objetivo }: { objetivo: [number, number, number] }) {
   const { camera, gl, invalidate } = useThree();
@@ -326,8 +350,13 @@ function Escena({
   return (
     <>
       <color attach="background" args={[deDia ? '#dcebf5' : '#1a2233']} />
-      <ambientLight intensity={deDia ? 0.55 : 0.15} />
-      <hemisphereLight intensity={deDia ? 0.35 : 0.1} color="#cfe4f7" groundColor="#7a8a6f" />
+      {/* Niebla atmosférica suave: da profundidad y escala al terreno lejano
+          sin tapar la casa. */}
+      <fog attach="fog" args={[deDia ? '#dcebf5' : '#1a2233', radio * 1.8, radio * 5]} />
+      <IluminacionEntorno />
+      {/* La IBL aporta la luz ambiental; los rellenos se bajan para no lavar. */}
+      <ambientLight intensity={deDia ? 0.28 : 0.1} />
+      <hemisphereLight intensity={deDia ? 0.25 : 0.08} color="#cfe4f7" groundColor="#7a8a6f" />
       {conJaula && <primitive object={arcoSolar} />}
       {conJaula && deDia && (
         <mesh position={[vSol.x * radio, vSol.y * radio, vSol.z * radio]}>
@@ -347,6 +376,8 @@ function Escena({
           shadow-camera-top={radio}
           shadow-camera-bottom={-radio}
           shadow-camera-far={radio * 4}
+          shadow-bias={-0.0002}
+          shadow-normalBias={0.03}
         />
       )}
 
@@ -354,12 +385,12 @@ function Escena({
         {/* Terreno alrededor */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[dims.ancho / 2, -0.03, dims.fondo / 2]} receiveShadow>
           <planeGeometry args={[dims.ancho + 40, dims.fondo + 40]} />
-          <meshStandardMaterial color="#b8c4a8" />
+          <meshStandardMaterial color="#b8c4a8" roughness={1} metalness={0} />
         </mesh>
         {/* Parcela */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[dims.ancho / 2, -0.01, dims.fondo / 2]} receiveShadow>
           <planeGeometry args={[dims.ancho, dims.fondo]} />
-          <meshStandardMaterial color="#cfe0c3" />
+          <meshStandardMaterial color="#cfe0c3" roughness={0.95} metalness={0} />
         </mesh>
 
         {/* Flecha del norte */}
@@ -436,6 +467,9 @@ function Escena({
                 >
                   <meshStandardMaterial
                     color="#efe9df"
+                    roughness={0.92}
+                    metalness={0}
+                    envMapIntensity={0.4}
                     transparent={!sobreRasante}
                     opacity={sobreRasante ? 1 : 0.4}
                   />
@@ -445,7 +479,15 @@ function Escena({
               {muros.cristales.map((c, i) => (
                 <mesh key={`c${i}`} position={c.posicion} rotation={[0, c.rotacionY, 0]}>
                   <planeGeometry args={c.tam} />
-                  <meshStandardMaterial color="#7ec8f7" transparent opacity={0.35} side={2} />
+                  <meshStandardMaterial
+                    color="#9fd3f2"
+                    roughness={0.08}
+                    metalness={0.1}
+                    envMapIntensity={1.6}
+                    transparent
+                    opacity={0.35}
+                    side={2}
+                  />
                 </mesh>
               ))}
             </group>
@@ -461,7 +503,7 @@ function Escena({
             castShadow
             receiveShadow
           >
-            <meshStandardMaterial color="#a95f38" side={2} />
+            <meshStandardMaterial color="#a95f38" roughness={0.82} metalness={0} envMapIntensity={0.5} side={2} />
           </mesh>
         )}
       </group>
@@ -651,12 +693,17 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
           // height:100% (que colapsa con el min-height del padre flex).
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           camera={{ position: modo === 'orbita' ? camaraOrbita : camaraInterior, fov: modo === 'orbita' ? 45 : 70 }}
-          shadows={!TACTIL}
+          shadows={TACTIL ? false : 'soft'}
           dpr={[1, TACTIL ? 1.5 : 2]}
           gl={{
             antialias: !TACTIL,
             powerPreference: 'high-performance',
             preserveDrawingBuffer: true, // para capturar la vista como imagen
+          }}
+          onCreated={({ gl }) => {
+            // Mapeo tonal cinematográfico (ACES Filmic) + exposición.
+            gl.toneMapping = ACESFilmicToneMapping;
+            gl.toneMappingExposure = 1.04;
           }}
           frameloop={modo === 'interior' || reproduciendo ? 'always' : 'demand'}
         >
