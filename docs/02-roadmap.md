@@ -134,6 +134,17 @@ de ser fácil.
       declara su superficie real; juntas forman una silueta en L limpia.
       Opción «✂️ recortar solapes» del editor. (Pendiente: recorte equivalente
       en 3D.)
+- [x] **Render más cinematográfico (sin dependencias)**: mapeo tonal ACES
+      Filmic con exposición, sombras suaves (PCFSoft), iluminación por entorno
+      (IBL con `RoomEnvironment` + PMREM de three, sin HDRIs externos),
+      materiales PBR con rugosidad/reflejo (cristales que reflejan) y niebla
+      atmosférica. Da luz ambiental suave, reflejos y profundidad tanto en
+      órbita como en el paseo interior.
+- [ ] Salto cinematográfico mayor (opcional, requiere librerías del ecosistema
+      R3F): post-proceso con `@react-three/postprocessing` (bloom, oclusión
+      ambiental N8AO, profundidad de campo, viñeta) y `@react-three/drei`
+      (`Environment` con HDRI, `SoftShadows` PCSS, suelos reflectantes). Se
+      valorará frente al peso extra del bundle.
 - [ ] Limahoyas y faldones para plantas en L (el tejado a cuatro aguas actual
       se apoya en la huella rectangular; una planta en L necesita descomponer
       la cubierta por alas).
