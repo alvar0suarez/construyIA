@@ -16,7 +16,8 @@ import {
   type AjustesNormativa,
 } from '../normativa/registry';
 import { tipoEstancia } from '../engine/catalogo';
-import { dimensionesParcela } from '../engine/geometria';
+import { dimensionesParcela, envolventeEdificable } from '../engine/geometria';
+import { encajarEn, envolvente, separar } from '../engine/saneado';
 
 function proyectoNuevo(): Proyecto {
   return {
@@ -411,13 +412,18 @@ export const useStore = create<AppState>()(
 
       aplicarDiseno: (diseno) =>
         set((s) => {
-          const dims = dimensionesParcela(s.proyecto.parcela);
+          // Se encajan las estancias dentro de la envolvente edificable (ya
+          // descontados los retranqueos), así el diseño de la IA respeta los
+          // límites aunque haya colocado algo un poco fuera.
+          const env = envolventeEdificable(s.proyecto.parcela, get().normativaActiva());
           const plantas: Proyecto['plantas'] = { sotano: [], baja: [], primera: [] };
           for (const e of diseno.estancias) {
             const destino = plantas[e.planta];
             if (!destino) continue;
-            const ancho = Math.max(0.5, Math.min(e.ancho, dims.ancho));
-            const fondo = Math.max(0.5, Math.min(e.fondo, dims.fondo));
+            const r = encajarEn(
+              { x: e.x, y: e.y, ancho: Math.max(0.5, e.ancho), fondo: Math.max(0.5, e.fondo) },
+              env,
+            );
             const huecos: Hueco[] = (e.huecos ?? []).map((h) => ({
               id: nuevoId('h'),
               tipo: h.tipo,
@@ -430,10 +436,10 @@ export const useStore = create<AppState>()(
             destino.push({
               id: nuevoId('e'),
               tipo: e.tipo,
-              x: Math.min(Math.max(0, e.x), Math.max(0, dims.ancho - ancho)),
-              y: Math.min(Math.max(0, e.y), Math.max(0, dims.fondo - fondo)),
-              ancho,
-              fondo,
+              x: r.x,
+              y: r.y,
+              ancho: r.ancho,
+              fondo: r.fondo,
               ...(e.alturaPlantas && e.alturaPlantas > 1 ? { alturaPlantas: e.alturaPlantas } : {}),
               huecos,
             });
@@ -464,20 +470,27 @@ export const useStore = create<AppState>()(
       aplicarMuebles: (muebles) =>
         set((s) => {
           const dims = dimensionesParcela(s.proyecto.parcela);
-          const porPlanta: Record<PlantaId, Mueble[]> = { sotano: [], baja: [], primera: [] };
+          const parcelaRect = { x: 0, y: 0, ancho: dims.ancho, fondo: dims.fondo };
+          // Agrupa por planta con id y tamaños saneados.
+          const grupos: Record<PlantaId, Mueble[]> = { sotano: [], baja: [], primera: [] };
           for (const mu of muebles) {
-            const destino = porPlanta[mu.planta];
+            const destino = grupos[mu.planta];
             if (!destino) continue;
-            const ancho = Math.max(0.2, Math.min(mu.ancho, dims.ancho));
-            const fondo = Math.max(0.2, Math.min(mu.fondo, dims.fondo));
             destino.push({
               id: nuevoId('m'),
               tipo: mu.tipo,
-              x: Math.min(Math.max(0, mu.x), Math.max(0, dims.ancho - ancho)),
-              y: Math.min(Math.max(0, mu.y), Math.max(0, dims.fondo - fondo)),
-              ancho,
-              fondo,
+              x: mu.x,
+              y: mu.y,
+              ancho: Math.max(0.2, Math.min(mu.ancho, dims.ancho)),
+              fondo: Math.max(0.2, Math.min(mu.fondo, dims.fondo)),
             });
+          }
+          // Cada mueble se encaja dentro de la huella de la casa en su planta
+          // (para que no floten en el jardín) y se separan los que se montan.
+          const porPlanta: Record<PlantaId, Mueble[]> = { sotano: [], baja: [], primera: [] };
+          for (const p of Object.keys(grupos) as PlantaId[]) {
+            const limites = envolvente(s.proyecto.plantas[p] ?? []) ?? parcelaRect;
+            porPlanta[p] = separar(grupos[p], limites);
           }
           return {
             pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],

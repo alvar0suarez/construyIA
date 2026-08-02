@@ -123,6 +123,11 @@ de ser fácil.
       de muebles; se ven como volúmenes en la vista 3D / paseo interior y como
       iconos en el plano 2D. `aplicarMuebles()` en el store (con deshacer);
       una casa nueva descarta el mobiliario anterior.
+- [x] **Saneado de los diseños de IA**: al aplicar una casa generada, las
+      estancias se encajan dentro de la envolvente edificable (respetan los
+      retranqueos aunque la IA se pase); al amueblar, cada mueble se mete en la
+      huella de la casa y se separan los que se montan. Módulo puro
+      `engine/saneado.ts` (`encajarEn`, `separar`) con tests.
 - [x] **IA.2**: subir un PDF de normativa → la IA extrae los parámetros
       (pdf.js en el navegador + tool `registrar_normativa` con citas) y los
       carga como normativa editable en nivel `interpretada-ia` para revisar.
