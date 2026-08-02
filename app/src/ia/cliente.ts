@@ -5,6 +5,7 @@
  */
 
 import { CATALOGO } from '../engine/catalogo';
+import { CATALOGO_MUEBLES, tipoMueble } from '../engine/muebles';
 import type { PlantaId } from '../domain/types';
 
 const ENDPOINT = 'https://api.anthropic.com/v1/messages';
@@ -258,6 +259,56 @@ function limpiarHuecos(raw: unknown): HuecoDiseno[] {
   return out;
 }
 
+/** Mueble colocado por la IA. */
+export interface MuebleDiseno {
+  tipo: string;
+  planta: PlantaId;
+  x: number;
+  y: number;
+  ancho: number;
+  fondo: number;
+}
+
+export interface MobiliarioIA {
+  muebles: MuebleDiseno[];
+  texto: string;
+}
+
+const MUEBLES_VALIDOS = new Set(CATALOGO_MUEBLES.map((m) => m.id));
+
+const HERRAMIENTA_MUEBLES = {
+  name: 'amueblar',
+  description:
+    'Amuebla la vivienda: coloca muebles DENTRO de las estancias existentes (te dan sus posiciones y tamaños). Muebles coherentes por estancia: dormitorios cama + armario + mesita; salón sofá + TV + mesa; cocina encimera + nevera; baños inodoro + lavabo + ducha o bañera; comedor mesa. No solapes los muebles con las paredes; deja paso.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      muebles: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            tipo: { type: 'string', enum: CATALOGO_MUEBLES.map((m) => m.id) },
+            planta: { type: 'string', enum: ['sotano', 'baja', 'primera'] },
+            x: { type: 'number', description: 'metros desde el oeste (izquierda) de la parcela' },
+            y: { type: 'number', description: 'metros desde el norte (arriba) de la parcela' },
+            ancho: { type: 'number', description: 'metros (este-oeste); opcional, usa uno realista' },
+            fondo: { type: 'number', description: 'metros (norte-sur); opcional' },
+          },
+          required: ['tipo', 'planta', 'x', 'y'],
+        },
+      },
+    },
+    required: ['muebles'],
+  },
+};
+
+const SYSTEM_MUEBLES = `Eres un interiorista que amuebla una vivienda ya distribuida. Te dan las estancias con su posición (x, y) y tamaño en metros. Coordenadas: origen (0,0) en la esquina noroeste de la parcela; x hacia el este, y hacia el sur.
+
+Amuebla con la herramienta \`amueblar\`: coloca cada mueble DENTRO de su estancia, sin solaparse con las paredes ni entre sí, dejando paso para circular. Amueblado coherente por tipo de estancia (dormitorio: cama + armario; salón: sofá + TV + mesa de centro; cocina: encimera + nevera; comedor: mesa; baño/aseo: inodoro + lavabo + ducha o bañera; despacho: escritorio + estantería). Usa medidas realistas.
+
+Además escribe una frase BREVE sobre el amueblado y recuerda en una línea que es orientativo. Español.`;
+
 /** Genera una vivienda completa con posiciones, huecos y cubierta. */
 export async function generarCasaCompleta(params: {
   apiKey: string;
@@ -368,4 +419,92 @@ export async function generarCasaCompleta(params: {
     cubierta,
     texto: texto || 'Casa generada.',
   };
+}
+
+/** Amuebla la vivienda: la IA coloca muebles dentro de las estancias. */
+export async function generarMobiliario(params: {
+  apiKey: string;
+  contexto: string;
+  deseo: string;
+  signal?: AbortSignal;
+}): Promise<MobiliarioIA> {
+  const { apiKey, contexto, deseo, signal } = params;
+
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    signal,
+    body: JSON.stringify({
+      model: MODELO,
+      max_tokens: 3500,
+      system: SYSTEM_MUEBLES,
+      tools: [HERRAMIENTA_MUEBLES],
+      tool_choice: { type: 'tool', name: 'amueblar' },
+      messages: [
+        {
+          role: 'user',
+          content: `CONTEXTO DEL PROYECTO (con las estancias y sus posiciones):\n${contexto}\n\nCÓMO QUIERO EL INTERIOR:\n${deseo || 'Amueblado cómodo y funcional para el día a día.'}`,
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    let detalle = `${res.status}`;
+    try {
+      const err = await res.json();
+      detalle = err?.error?.message ?? detalle;
+    } catch {
+      /* respuesta no-JSON */
+    }
+    if (res.status === 401) {
+      throw new Error('La clave de API no es válida. Revísala en ⚙️ Clave API.');
+    }
+    throw new Error(`Error de la API de Claude: ${detalle}`);
+  }
+
+  const data = await res.json();
+  const bloques: { type: string; text?: string; name?: string; input?: unknown }[] =
+    data?.content ?? [];
+  const texto = bloques
+    .filter((b) => b.type === 'text')
+    .map((b) => b.text ?? '')
+    .join('\n')
+    .trim();
+
+  const uso = bloques.find((b) => b.type === 'tool_use' && b.name === 'amueblar');
+  const lista = ((uso?.input as { muebles?: unknown[] })?.muebles ?? []) as MuebleDiseno[];
+
+  const muebles: MuebleDiseno[] = [];
+  for (const mu of lista) {
+    if (
+      MUEBLES_VALIDOS.has(mu?.tipo) &&
+      PLANTAS_VALIDAS.has(mu?.planta) &&
+      Number.isFinite(mu?.x) &&
+      Number.isFinite(mu?.y)
+    ) {
+      const def = tipoMueble(mu.tipo);
+      const ancho = Number.isFinite(mu.ancho) && mu.ancho > 0 ? Number(mu.ancho) : def.defaultW;
+      const fondo = Number.isFinite(mu.fondo) && mu.fondo > 0 ? Number(mu.fondo) : def.defaultD;
+      muebles.push({
+        tipo: mu.tipo,
+        planta: mu.planta,
+        x: Math.max(0, Math.round(mu.x * 100) / 100),
+        y: Math.max(0, Math.round(mu.y * 100) / 100),
+        ancho: Math.round(ancho * 100) / 100,
+        fondo: Math.round(fondo * 100) / 100,
+      });
+    }
+  }
+
+  if (muebles.length === 0) {
+    throw new Error('La IA no devolvió muebles. Asegúrate de tener estancias en el boceto.');
+  }
+
+  return { muebles, texto: texto || 'Interior amueblado.' };
 }

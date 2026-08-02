@@ -56,6 +56,16 @@ export interface Estancia extends Rect {
   alturaPlantas?: number;
 }
 
+/**
+ * Mueble (mobiliario interior). Se coloca en coordenadas de la parcela, igual
+ * que las estancias; su altura la da el catálogo de muebles. Se apoya en el
+ * suelo de su planta y se ve en la vista 3D / paseo interior.
+ */
+export interface Mueble extends Rect {
+  id: string;
+  tipo: string; // id del catálogo de muebles
+}
+
 export interface Proyecto {
   schemaVersion: 1;
   nombre: string;
@@ -72,6 +82,8 @@ export interface Proyecto {
   alturaPorPlanta: number;
   /** Cubierta de la vivienda. Si falta, se asume inclinada a 30°. */
   cubierta?: { tipo: 'plana' | 'inclinada'; pendiente: number };
+  /** Mobiliario interior por planta (opcional; generado por IA o a mano). */
+  muebles?: Record<PlantaId, Mueble[]>;
 }
 
 export const CUBIERTA_DEFECTO = { tipo: 'inclinada', pendiente: 30 } as const;

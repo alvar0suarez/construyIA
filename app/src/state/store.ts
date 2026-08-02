@@ -4,6 +4,7 @@ import type {
   Estancia,
   Hueco,
   Lado,
+  Mueble,
   Parcela,
   PlantaId,
   Proyecto,
@@ -88,6 +89,10 @@ interface AppState {
   importProyecto: (p: Proyecto) => void;
   /** Reemplaza el boceto con una vivienda completa generada por IA. */
   aplicarDiseno: (diseno: DisenoAplicable) => void;
+  /** Coloca el mobiliario interior generado por IA. */
+  aplicarMuebles: (
+    muebles: Array<{ tipo: string; planta: PlantaId; x: number; y: number; ancho: number; fondo: number }>,
+  ) => void;
 }
 
 /** Diseño completo aplicable (lo que devuelve la IA, ya validado). */
@@ -439,6 +444,8 @@ export const useStore = create<AppState>()(
             proyecto: {
               ...s.proyecto,
               plantas,
+              // Una casa nueva descarta el mobiliario anterior.
+              muebles: undefined,
               alturaPorPlanta: diseno.alturaPorPlanta ?? s.proyecto.alturaPorPlanta,
               cubierta: diseno.cubierta
                 ? {
@@ -451,6 +458,31 @@ export const useStore = create<AppState>()(
             plantaActiva: 'baja',
             seleccionId: null,
             seleccionHuecoId: null,
+          };
+        }),
+
+      aplicarMuebles: (muebles) =>
+        set((s) => {
+          const dims = dimensionesParcela(s.proyecto.parcela);
+          const porPlanta: Record<PlantaId, Mueble[]> = { sotano: [], baja: [], primera: [] };
+          for (const mu of muebles) {
+            const destino = porPlanta[mu.planta];
+            if (!destino) continue;
+            const ancho = Math.max(0.2, Math.min(mu.ancho, dims.ancho));
+            const fondo = Math.max(0.2, Math.min(mu.fondo, dims.fondo));
+            destino.push({
+              id: nuevoId('m'),
+              tipo: mu.tipo,
+              x: Math.min(Math.max(0, mu.x), Math.max(0, dims.ancho - ancho)),
+              y: Math.min(Math.max(0, mu.y), Math.max(0, dims.fondo - fondo)),
+              ancho,
+              fondo,
+            });
+          }
+          return {
+            pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+            futuro: [],
+            proyecto: { ...s.proyecto, muebles: porPlanta },
           };
         }),
     }),
