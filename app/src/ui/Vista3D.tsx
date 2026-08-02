@@ -1,4 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Bloom, EffectComposer, N8AO, SMAA, Vignette } from '@react-three/postprocessing';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ACESFilmicToneMapping,
@@ -61,6 +62,27 @@ function IluminacionEntorno() {
     };
   }, [gl, scene]);
   return null;
+}
+
+/**
+ * Post-proceso cinematográfico: oclusión ambiental (N8AO, sombreado de
+ * contacto en esquinas y bajo objetos), un bloom muy sutil para los brillos,
+ * viñeta para enmarcar y SMAA como antialiasing (el MSAA se desactiva al usar
+ * composer). En táctil se omite la oclusión ambiental por rendimiento.
+ */
+function PostProceso() {
+  return (
+    <EffectComposer multisampling={0} enableNormalPass={!TACTIL}>
+      {!TACTIL ? (
+        <N8AO halfRes aoRadius={1.5} intensity={2.2} distanceFalloff={1} />
+      ) : (
+        <></>
+      )}
+      <Bloom mipmapBlur luminanceThreshold={1.1} intensity={0.3} />
+      <Vignette offset={0.32} darkness={0.5} />
+      <SMAA />
+    </EffectComposer>
+  );
 }
 
 function ControlesOrbita({ objetivo }: { objetivo: [number, number, number] }) {
@@ -717,6 +739,7 @@ export function Vista3D({ normativa }: { normativa: NormativaMunicipal }) {
               muros={murosColision}
             />
           )}
+          <PostProceso />
         </Canvas>
         {modo === 'interior' && <Joystick valor={joystick} />}
       </div>

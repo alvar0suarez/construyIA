@@ -140,11 +140,15 @@ de ser fácil.
       materiales PBR con rugosidad/reflejo (cristales que reflejan) y niebla
       atmosférica. Da luz ambiental suave, reflejos y profundidad tanto en
       órbita como en el paseo interior.
-- [ ] Salto cinematográfico mayor (opcional, requiere librerías del ecosistema
-      R3F): post-proceso con `@react-three/postprocessing` (bloom, oclusión
-      ambiental N8AO, profundidad de campo, viñeta) y `@react-three/drei`
-      (`Environment` con HDRI, `SoftShadows` PCSS, suelos reflectantes). Se
-      valorará frente al peso extra del bundle.
+- [x] **Post-proceso cinematográfico**: pipeline con `@react-three/postprocessing`
+      — oclusión ambiental **N8AO** (sombreado de contacto en esquinas y bajo
+      objetos, clave en interiores), **bloom** sutil, **viñeta** y **SMAA**
+      (antialiasing bajo composer). En táctil se omite la N8AO por rendimiento.
+      La vista 3D se carga bajo demanda, así que el peso extra no afecta al
+      arranque de la app.
+- [ ] Mejoras cinematográficas adicionales (opcionales): `@react-three/drei`
+      `Environment` con HDRI, `SoftShadows` PCSS, suelos reflectantes,
+      profundidad de campo; y mobiliario/materiales con textura.
 - [ ] Limahoyas y faldones para plantas en L (el tejado a cuatro aguas actual
       se apoya en la huella rectangular; una planta en L necesita descomponer
       la cubierta por alas).
