@@ -110,6 +110,13 @@ de ser fácil.
 - [x] **IA.3**: acciones aplicables — la IA propone estancias concretas
       (herramienta `proponer_estancias`) que el usuario añade al boceto con
       un clic, en la planta y dimensiones sugeridas.
+- [x] **IA.4 · Generar casa completa**: botón «🏠 Generar casa completa» que
+      pide a la IA una vivienda ENTERA y detallada (herramienta `generar_casa`)
+      — todas las estancias con posición (x, y) y tamaño exactos dentro de la
+      envolvente edificable, con ventanas/puertas, doble altura y cubierta. Se
+      muestra una vista previa y, al aplicarla, reemplaza el boceto (con
+      deshacer). La IA recibe las coordenadas de la envolvente para colocar
+      dentro. Todo validado antes de aplicar.
 - [x] **IA.2**: subir un PDF de normativa → la IA extrae los parámetros
       (pdf.js en el navegador + tool `registrar_normativa` con citas) y los
       carga como normativa editable en nivel `interpretada-ia` para revisar.

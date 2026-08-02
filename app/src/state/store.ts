@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type {
   Estancia,
   Hueco,
+  Lado,
   Parcela,
   PlantaId,
   Proyecto,
@@ -85,6 +86,31 @@ interface AppState {
 
   resetProyecto: () => void;
   importProyecto: (p: Proyecto) => void;
+  /** Reemplaza el boceto con una vivienda completa generada por IA. */
+  aplicarDiseno: (diseno: DisenoAplicable) => void;
+}
+
+/** Diseño completo aplicable (lo que devuelve la IA, ya validado). */
+export interface DisenoAplicable {
+  estancias: Array<{
+    tipo: string;
+    planta: PlantaId;
+    x: number;
+    y: number;
+    ancho: number;
+    fondo: number;
+    alturaPlantas?: number;
+    huecos?: Array<{
+      tipo: Hueco['tipo'];
+      lado: Lado;
+      offset: number;
+      ancho: number;
+      alto: number;
+      antepecho: number;
+    }>;
+  }>;
+  alturaPorPlanta?: number;
+  cubierta?: { tipo: 'plana' | 'inclinada'; pendiente?: number };
 }
 
 /** Devuelve las plantas con la estancia indicada transformada. */
@@ -377,6 +403,56 @@ export const useStore = create<AppState>()(
           plantaActiva: 'baja',
         }));
       },
+
+      aplicarDiseno: (diseno) =>
+        set((s) => {
+          const dims = dimensionesParcela(s.proyecto.parcela);
+          const plantas: Proyecto['plantas'] = { sotano: [], baja: [], primera: [] };
+          for (const e of diseno.estancias) {
+            const destino = plantas[e.planta];
+            if (!destino) continue;
+            const ancho = Math.max(0.5, Math.min(e.ancho, dims.ancho));
+            const fondo = Math.max(0.5, Math.min(e.fondo, dims.fondo));
+            const huecos: Hueco[] = (e.huecos ?? []).map((h) => ({
+              id: nuevoId('h'),
+              tipo: h.tipo,
+              lado: h.lado,
+              offset: h.offset,
+              ancho: h.ancho,
+              alto: h.alto,
+              antepecho: h.antepecho,
+            }));
+            destino.push({
+              id: nuevoId('e'),
+              tipo: e.tipo,
+              x: Math.min(Math.max(0, e.x), Math.max(0, dims.ancho - ancho)),
+              y: Math.min(Math.max(0, e.y), Math.max(0, dims.fondo - fondo)),
+              ancho,
+              fondo,
+              ...(e.alturaPlantas && e.alturaPlantas > 1 ? { alturaPlantas: e.alturaPlantas } : {}),
+              huecos,
+            });
+          }
+          return {
+            pasado: [...s.pasado.slice(-MAX_HISTORIA + 1), s.proyecto],
+            futuro: [],
+            proyecto: {
+              ...s.proyecto,
+              plantas,
+              alturaPorPlanta: diseno.alturaPorPlanta ?? s.proyecto.alturaPorPlanta,
+              cubierta: diseno.cubierta
+                ? {
+                    tipo: diseno.cubierta.tipo,
+                    pendiente:
+                      diseno.cubierta.pendiente ?? s.proyecto.cubierta?.pendiente ?? 30,
+                  }
+                : s.proyecto.cubierta,
+            },
+            plantaActiva: 'baja',
+            seleccionId: null,
+            seleccionHuecoId: null,
+          };
+        }),
     }),
     {
       name: 'construyia-proyecto',
