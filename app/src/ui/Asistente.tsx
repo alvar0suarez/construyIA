@@ -1,7 +1,12 @@
 import { useRef, useState } from 'react';
 import { tipoEstancia } from '../engine/catalogo';
 import { evaluar } from '../engine/cumplimiento';
-import { consultarAsistente, type EstanciaPropuesta } from '../ia/cliente';
+import {
+  consultarAsistente,
+  generarCasaCompleta,
+  type DisenoCasa,
+  type EstanciaPropuesta,
+} from '../ia/cliente';
 import { resumenProyecto } from '../ia/contexto';
 import { PLANTAS } from '../domain/types';
 import type { NormativaMunicipal } from '../normativa/schema';
@@ -14,6 +19,7 @@ const nombrePlanta = (id: string) => PLANTAS.find((p) => p.id === id)?.nombre ??
 export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const proyecto = useStore((s) => s.proyecto);
   const addEstanciaConfig = useStore((s) => s.addEstanciaConfig);
+  const aplicarDiseno = useStore((s) => s.aplicarDiseno);
   const setPersonalizada = useStore((s) => s.setPersonalizada);
   const setNormativaId = useStore((s) => s.setNormativaId);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(CLAVE_LS) ?? '');
@@ -23,6 +29,8 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const [propuestas, setPropuestas] = useState<EstanciaPropuesta[]>([]);
   const [anadidas, setAnadidas] = useState<Set<number>>(new Set());
   const [cargando, setCargando] = useState(false);
+  const [generando, setGenerando] = useState(false);
+  const [diseno, setDiseno] = useState<DisenoCasa | null>(null);
   const [error, setError] = useState('');
   const [pdfEstado, setPdfEstado] = useState('');
   const inputPdf = useRef<HTMLInputElement>(null);
@@ -59,6 +67,34 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const aplicar = (p: EstanciaPropuesta, i: number) => {
     addEstanciaConfig({ tipoId: p.tipo, planta: p.planta, ancho: p.ancho, fondo: p.fondo });
     setAnadidas((s) => new Set(s).add(i));
+  };
+
+  const generarCasa = async () => {
+    setError('');
+    setRespuesta('');
+    setPropuestas([]);
+    setDiseno(null);
+    if (!apiKey) {
+      setAjustes(true);
+      setError('Introduce tu clave de API de Anthropic para generar la casa.');
+      return;
+    }
+    setGenerando(true);
+    try {
+      const contexto = resumenProyecto(proyecto, normativa, evaluar(proyecto, normativa));
+      const d = await generarCasaCompleta({ apiKey, contexto, deseo });
+      setDiseno(d);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setGenerando(false);
+    }
+  };
+
+  const aplicarCasa = () => {
+    if (!diseno) return;
+    aplicarDiseno(diseno);
+    setDiseno(null);
   };
 
   const interpretarPdf = async (fichero: File) => {
@@ -119,13 +155,42 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
         onChange={(e) => setDeseo(e.target.value)}
       />
       <div className="asistente-acciones">
-        <button className="btn-primario" onClick={preguntar} disabled={cargando}>
+        <button className="btn-primario" onClick={preguntar} disabled={cargando || generando}>
           {cargando ? 'Pensando…' : '✨ Sugerir ideas'}
+        </button>
+        <button className="btn-primario" onClick={generarCasa} disabled={cargando || generando}>
+          {generando ? 'Diseñando…' : '🏠 Generar casa completa'}
         </button>
         <button className="enlace" onClick={() => setAjustes((v) => !v)}>
           ⚙️ Clave API
         </button>
       </div>
+
+      {diseno && (
+        <div className="asistente-diseno">
+          {diseno.texto && <div className="asistente-respuesta">{diseno.texto}</div>}
+          <p className="asistente-nota">
+            Casa generada con <strong>{diseno.estancias.length} estancias</strong>
+            {PLANTAS.filter((p) => diseno.estancias.some((e) => e.planta === p.id)).map(
+              (p) =>
+                ` · ${p.nombre}: ${diseno.estancias.filter((e) => e.planta === p.id).length}`,
+            )}
+            .
+          </p>
+          <div className="asistente-acciones">
+            <button className="btn-primario" onClick={aplicarCasa}>
+              ✅ Aplicar a mi proyecto
+            </button>
+            <button className="enlace" onClick={() => setDiseno(null)}>
+              Descartar
+            </button>
+          </div>
+          <p className="asistente-nota">
+            ⚠️ Aplicar <strong>reemplaza</strong> tu boceto actual. Podrás ajustarla a mano
+            luego (y deshacer con Ctrl+Z).
+          </p>
+        </div>
+      )}
 
       {ajustes && (
         <div className="asistente-ajustes">

@@ -1,7 +1,7 @@
 import { PLANTAS, type Proyecto } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
 import type { Evaluacion } from '../engine/cumplimiento';
-import { dimensionesParcela } from '../engine/geometria';
+import { dimensionesParcela, envolventeEdificable } from '../engine/geometria';
 import type { NormativaMunicipal } from '../normativa/schema';
 
 /**
@@ -31,6 +31,14 @@ export function resumenProyecto(
 
   l.push('');
   l.push(`PARCELA: ${d.ancho.toFixed(1)} × ${d.fondo.toFixed(1)} m (${m.areaParcela.toFixed(0)} m²), frente al ${proyecto.parcela.frente}.`);
+  const env = envolventeEdificable(proyecto.parcela, normativa);
+  l.push(
+    `ENVOLVENTE EDIFICABLE (donde puede ir la casa, ya descontados los retranqueos): ` +
+      `rectángulo con esquina noroeste en x=${env.x.toFixed(1)}, y=${env.y.toFixed(1)} y tamaño ` +
+      `${env.ancho.toFixed(1)} m (ancho, este-oeste) × ${env.fondo.toFixed(1)} m (fondo, norte-sur). ` +
+      `Coordenadas: origen (0,0) en la esquina noroeste de la parcela; x hacia el este, y hacia el sur. ` +
+      `Coloca TODAS las estancias dentro de ese rectángulo.`,
+  );
 
   for (const p of PLANTAS) {
     const est = proyecto.plantas[p.id] ?? [];

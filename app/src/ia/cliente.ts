@@ -55,6 +55,102 @@ Importante: no eres un proyecto técnico ni una validación oficial; recuérdalo
 
 const TIPOS_VALIDOS = new Set(CATALOGO.map((t) => t.id));
 const PLANTAS_VALIDAS = new Set<PlantaId>(['sotano', 'baja', 'primera']);
+const LADOS_VALIDOS = new Set(['norte', 'sur', 'este', 'oeste']);
+
+/** Hueco (ventana/puerta) de una estancia generada por IA. */
+export interface HuecoDiseno {
+  tipo: 'ventana' | 'puerta';
+  lado: 'norte' | 'sur' | 'este' | 'oeste';
+  offset: number;
+  ancho: number;
+  alto: number;
+  antepecho: number;
+}
+
+/** Estancia con posición y tamaño exactos, generada por IA. */
+export interface EstanciaDiseno {
+  tipo: string;
+  planta: PlantaId;
+  x: number;
+  y: number;
+  ancho: number;
+  fondo: number;
+  alturaPlantas?: number;
+  huecos?: HuecoDiseno[];
+}
+
+/** Diseño completo de una vivienda generado por IA. */
+export interface DisenoCasa {
+  estancias: EstanciaDiseno[];
+  alturaPorPlanta?: number;
+  cubierta?: { tipo: 'plana' | 'inclinada'; pendiente?: number };
+  texto: string;
+}
+
+const HERRAMIENTA_CASA = {
+  name: 'generar_casa',
+  description:
+    'Genera una vivienda unifamiliar COMPLETA y detallada: todas las estancias con posición (x, y) y tamaño exactos dentro de la envolvente edificable, con ventanas y puertas, y la cubierta. Distribúyelas de forma coherente (zona de día abajo, dormitorios arriba, baños cerca de dormitorios, escalera si hay planta alta) sin solaparse, y respetando ocupación, edificabilidad y altura.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      alturaPorPlanta: { type: 'number', description: 'metros, típico 2,7–3' },
+      cubierta: {
+        type: 'object',
+        properties: {
+          tipo: { type: 'string', enum: ['plana', 'inclinada'] },
+          pendiente: { type: 'number', description: 'grados, si es inclinada' },
+        },
+        required: ['tipo'],
+      },
+      estancias: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            tipo: { type: 'string', enum: CATALOGO.map((t) => t.id) },
+            planta: { type: 'string', enum: ['sotano', 'baja', 'primera'] },
+            x: { type: 'number', description: 'metros desde el borde OESTE (izquierda) de la parcela' },
+            y: { type: 'number', description: 'metros desde el borde NORTE (arriba) de la parcela' },
+            ancho: { type: 'number', description: 'metros (dimensión este-oeste)' },
+            fondo: { type: 'number', description: 'metros (dimensión norte-sur)' },
+            alturaPlantas: { type: 'number', description: '1 normal, 2 doble altura' },
+            huecos: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  tipo: { type: 'string', enum: ['ventana', 'puerta'] },
+                  lado: { type: 'string', enum: ['norte', 'sur', 'este', 'oeste'] },
+                  offset: { type: 'number', description: 'metros desde la esquina de esa pared' },
+                  ancho: { type: 'number' },
+                  alto: { type: 'number' },
+                  antepecho: { type: 'number', description: 'altura del alféizar (0 para puertas)' },
+                },
+                required: ['tipo', 'lado', 'offset', 'ancho', 'alto', 'antepecho'],
+              },
+            },
+          },
+          required: ['tipo', 'planta', 'x', 'y', 'ancho', 'fondo'],
+        },
+      },
+    },
+    required: ['estancias'],
+  },
+};
+
+const SYSTEM_CASA = `Eres un arquitecto que diseña una vivienda unifamiliar COMPLETA y detallada sobre una parcela real, dentro de la normativa que te dan. Te dan la envolvente edificable (el rectángulo donde puede ir la casa) y sus coordenadas.
+
+Genera la casa entera con la herramienta \`generar_casa\`: coloca todas las estancias con posición (x, y) y tamaño exactos, EN METROS, DENTRO de la envolvente edificable. Sistema de coordenadas: origen (0,0) en la esquina noroeste de la parcela; x crece hacia el este (derecha), y crece hacia el sur (abajo).
+
+Reglas:
+- Distribución coherente: zona de día (salón, cocina, comedor) en planta baja; dormitorios y baños en planta alta si hay; baños cerca de dormitorios; escalera que conecte plantas si hay planta alta; recibidor/pasillo para circular.
+- Las estancias NO deben solaparse (salvo que quieras una planta en L a propósito). Colócalas adyacentes, compartiendo pared.
+- Respeta ocupación máxima, edificabilidad y altura de la normativa. No te salgas de la envolvente.
+- Pon ventanas (con antepecho ~0,9 m) orientadas para buena luz y puertas (antepecho 0) donde haga falta, incluida una puerta de acceso en la fachada del frente.
+- Usa medidas realistas (dormitorio ≥ 8–12 m², salón ≥ 18 m², pasillos ~1–1,2 m de ancho).
+
+Además del uso de la herramienta, escribe un párrafo BREVE explicando la idea de la distribución. Recuerda al final, en una línea, que es orientativo y no sustituye a un arquitecto. Español.`;
 
 export interface RespuestaAsistente {
   texto: string;
@@ -137,4 +233,139 @@ export async function consultarAsistente(params: {
   }
 
   return { texto: texto || '(sin comentario)', propuestas };
+}
+
+function limpiarHuecos(raw: unknown): HuecoDiseno[] {
+  if (!Array.isArray(raw)) return [];
+  const out: HuecoDiseno[] = [];
+  for (const h of raw as HuecoDiseno[]) {
+    if (
+      (h?.tipo === 'ventana' || h?.tipo === 'puerta') &&
+      LADOS_VALIDOS.has(h?.lado) &&
+      Number.isFinite(h?.ancho) &&
+      Number.isFinite(h?.alto)
+    ) {
+      out.push({
+        tipo: h.tipo,
+        lado: h.lado,
+        offset: Math.max(0, Number(h.offset) || 0),
+        ancho: Math.max(0.3, Number(h.ancho) || 0.9),
+        alto: Math.max(0.3, Number(h.alto) || 1.2),
+        antepecho: Math.max(0, Number(h.antepecho) || 0),
+      });
+    }
+  }
+  return out;
+}
+
+/** Genera una vivienda completa con posiciones, huecos y cubierta. */
+export async function generarCasaCompleta(params: {
+  apiKey: string;
+  contexto: string;
+  deseo: string;
+  signal?: AbortSignal;
+}): Promise<DisenoCasa> {
+  const { apiKey, contexto, deseo, signal } = params;
+
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    signal,
+    body: JSON.stringify({
+      model: MODELO,
+      max_tokens: 4000,
+      system: SYSTEM_CASA,
+      tools: [HERRAMIENTA_CASA],
+      tool_choice: { type: 'tool', name: 'generar_casa' },
+      messages: [
+        {
+          role: 'user',
+          content: `CONTEXTO DEL PROYECTO:\n${contexto}\n\nLO QUE QUIERO EN MI CASA:\n${deseo || 'Una vivienda familiar cómoda que aproveche bien la parcela dentro de la normativa.'}`,
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    let detalle = `${res.status}`;
+    try {
+      const err = await res.json();
+      detalle = err?.error?.message ?? detalle;
+    } catch {
+      /* respuesta no-JSON */
+    }
+    if (res.status === 401) {
+      throw new Error('La clave de API no es válida. Revísala en ⚙️ Clave API.');
+    }
+    throw new Error(`Error de la API de Claude: ${detalle}`);
+  }
+
+  const data = await res.json();
+  const bloques: { type: string; text?: string; name?: string; input?: unknown }[] =
+    data?.content ?? [];
+  const texto = bloques
+    .filter((b) => b.type === 'text')
+    .map((b) => b.text ?? '')
+    .join('\n')
+    .trim();
+
+  const uso = bloques.find((b) => b.type === 'tool_use' && b.name === 'generar_casa');
+  const input = (uso?.input as {
+    estancias?: unknown[];
+    alturaPorPlanta?: number;
+    cubierta?: { tipo?: string; pendiente?: number };
+  }) ?? {};
+
+  const estancias: EstanciaDiseno[] = [];
+  for (const e of (input.estancias ?? []) as EstanciaDiseno[]) {
+    if (
+      TIPOS_VALIDOS.has(e?.tipo) &&
+      PLANTAS_VALIDAS.has(e?.planta) &&
+      Number.isFinite(e?.x) &&
+      Number.isFinite(e?.y) &&
+      e?.ancho > 0 &&
+      e?.fondo > 0
+    ) {
+      const alt = Number(e.alturaPlantas);
+      estancias.push({
+        tipo: e.tipo,
+        planta: e.planta,
+        x: Math.max(0, Math.round(e.x * 10) / 10),
+        y: Math.max(0, Math.round(e.y * 10) / 10),
+        ancho: Math.round(e.ancho * 10) / 10,
+        fondo: Math.round(e.fondo * 10) / 10,
+        alturaPlantas: alt >= 2 ? 2 : 1,
+        huecos: limpiarHuecos(e.huecos),
+      });
+    }
+  }
+
+  if (estancias.length === 0) {
+    throw new Error('La IA no devolvió una casa válida. Prueba a reformular lo que quieres.');
+  }
+
+  const tipoCub = input.cubierta?.tipo;
+  let cubierta: DisenoCasa['cubierta'];
+  if (tipoCub === 'plana' || tipoCub === 'inclinada') {
+    cubierta = {
+      tipo: tipoCub,
+      pendiente: Number.isFinite(input.cubierta?.pendiente)
+        ? Math.min(60, Math.max(5, Number(input.cubierta?.pendiente)))
+        : undefined,
+    };
+  }
+
+  return {
+    estancias,
+    alturaPorPlanta: Number.isFinite(input.alturaPorPlanta)
+      ? Math.min(4, Math.max(2.2, Number(input.alturaPorPlanta)))
+      : undefined,
+    cubierta,
+    texto: texto || 'Casa generada.',
+  };
 }
