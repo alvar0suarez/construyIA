@@ -17,6 +17,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { CUBIERTA_DEFECTO, PLANTAS, type PlantaId } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
 import { dimensionesParcela, envolventeEdificable } from '../engine/geometria';
+import { tipoMueble } from '../engine/muebles';
 import {
   diaDelAnyo,
   formatoHora,
@@ -256,6 +257,7 @@ function Escena({
 }) {
   const parcela = useStore((s) => s.proyecto.parcela);
   const plantas = useStore((s) => s.proyecto.plantas);
+  const muebles = useStore((s) => s.proyecto.muebles);
   const alturaPorPlanta = useStore((s) => s.proyecto.alturaPorPlanta);
   // Selector sobre el campo crudo (con ?? a una constante estable) para no
   // crear un objeto nuevo por render.
@@ -527,6 +529,25 @@ function Escena({
           >
             <meshStandardMaterial color="#a95f38" roughness={0.82} metalness={0} envMapIntensity={0.5} side={2} />
           </mesh>
+        )}
+
+        {/* Mobiliario interior (cajas simples) apoyado en el suelo de su planta */}
+        {PLANTAS.map((p) =>
+          (muebles?.[p.id] ?? []).map((mu) => {
+            const def = tipoMueble(mu.tipo);
+            const base = basePlanta(p.id);
+            return (
+              <mesh
+                key={mu.id}
+                position={[mu.x + mu.ancho / 2, base + 0.02 + def.alto / 2, mu.y + mu.fondo / 2]}
+                castShadow
+                receiveShadow
+              >
+                <boxGeometry args={[mu.ancho, def.alto, mu.fondo]} />
+                <meshStandardMaterial color={def.color} roughness={0.75} metalness={0} />
+              </mesh>
+            );
+          }),
         )}
       </group>
     </>

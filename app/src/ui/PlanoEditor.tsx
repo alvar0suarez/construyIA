@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Estancia, PlantaId } from '../domain/types';
 import { PLANTAS } from '../domain/types';
 import { tipoEstancia } from '../engine/catalogo';
+import { tipoMueble } from '../engine/muebles';
 import {
   areaVisible,
   dimensionesParcela,
@@ -188,6 +189,7 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
   };
   const retranqueos = retranqueoPorLado(parcela.frente, normativa.retranqueos);
   const estancias = plantas[plantaActiva] ?? [];
+  const muebles = useStore((s) => s.proyecto.muebles?.[plantaActiva]) ?? [];
   const fantasmas: Estancia[] = PLANTAS.filter(
     (p) => p.id !== plantaActiva && p.sobreRasante,
   ).flatMap((p) => plantas[p.id as PlantaId] ?? []);
@@ -603,6 +605,36 @@ export function PlanoEditor({ normativa }: { normativa: NormativaMunicipal }) {
                   </line>
                 );
               })}
+            </g>
+          );
+        })}
+
+        {/* Mobiliario (generado por IA): se dibuja encima, sin interacción */}
+        {muebles.map((mu) => {
+          const def = tipoMueble(mu.tipo);
+          return (
+            <g key={mu.id} style={{ pointerEvents: 'none' }}>
+              <rect
+                x={mu.x}
+                y={mu.y}
+                width={mu.ancho}
+                height={mu.fondo}
+                rx={0.08}
+                fill={def.color}
+                fillOpacity={0.55}
+                stroke="#5b544733"
+                strokeWidth={0.03}
+              />
+              {Math.min(mu.ancho, mu.fondo) > 0.6 && (
+                <text
+                  x={mu.x + mu.ancho / 2}
+                  y={mu.y + mu.fondo / 2 + 0.14}
+                  textAnchor="middle"
+                  style={{ fontSize: '0.42px' }}
+                >
+                  {def.icono}
+                </text>
+              )}
             </g>
           );
         })}

@@ -117,6 +117,12 @@ de ser fácil.
       muestra una vista previa y, al aplicarla, reemplaza el boceto (con
       deshacer). La IA recibe las coordenadas de la envolvente para colocar
       dentro. Todo validado antes de aplicar.
+- [x] **IA.5 · Amueblar con IA**: botón «🛋️ Amueblar con IA» que coloca
+      mobiliario (herramienta `amueblar`) DENTRO de las estancias existentes
+      (a la IA se le pasan sus posiciones). Nuevo dominio `Mueble` + catálogo
+      de muebles; se ven como volúmenes en la vista 3D / paseo interior y como
+      iconos en el plano 2D. `aplicarMuebles()` en el store (con deshacer);
+      una casa nueva descarta el mobiliario anterior.
 - [x] **IA.2**: subir un PDF de normativa → la IA extrae los parámetros
       (pdf.js en el navegador + tool `registrar_normativa` con citas) y los
       carga como normativa editable en nivel `interpretada-ia` para revisar.

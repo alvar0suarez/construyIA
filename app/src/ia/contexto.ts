@@ -44,8 +44,11 @@ export function resumenProyecto(
     const est = proyecto.plantas[p.id] ?? [];
     if (est.length === 0) continue;
     const detalle = est
-      .map((e) => `${tipoEstancia(e.tipo).nombre} ${e.ancho.toFixed(1)}×${e.fondo.toFixed(1)} m`)
-      .join(', ');
+      .map(
+        (e) =>
+          `${tipoEstancia(e.tipo).nombre} ${e.ancho.toFixed(1)}×${e.fondo.toFixed(1)} m en (x=${e.x.toFixed(1)}, y=${e.y.toFixed(1)})`,
+      )
+      .join('; ');
     l.push(`${p.nombre}: ${detalle}.`);
   }
   if (PLANTAS.every((p) => (proyecto.plantas[p.id] ?? []).length === 0)) {

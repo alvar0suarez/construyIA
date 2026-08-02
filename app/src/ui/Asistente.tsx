@@ -4,8 +4,10 @@ import { evaluar } from '../engine/cumplimiento';
 import {
   consultarAsistente,
   generarCasaCompleta,
+  generarMobiliario,
   type DisenoCasa,
   type EstanciaPropuesta,
+  type MobiliarioIA,
 } from '../ia/cliente';
 import { resumenProyecto } from '../ia/contexto';
 import { PLANTAS } from '../domain/types';
@@ -20,6 +22,7 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const proyecto = useStore((s) => s.proyecto);
   const addEstanciaConfig = useStore((s) => s.addEstanciaConfig);
   const aplicarDiseno = useStore((s) => s.aplicarDiseno);
+  const aplicarMuebles = useStore((s) => s.aplicarMuebles);
   const setPersonalizada = useStore((s) => s.setPersonalizada);
   const setNormativaId = useStore((s) => s.setNormativaId);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(CLAVE_LS) ?? '');
@@ -31,7 +34,10 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
   const [cargando, setCargando] = useState(false);
   const [generando, setGenerando] = useState(false);
   const [diseno, setDiseno] = useState<DisenoCasa | null>(null);
+  const [amueblando, setAmueblando] = useState(false);
+  const [mobiliario, setMobiliario] = useState<MobiliarioIA | null>(null);
   const [error, setError] = useState('');
+  const hayEstancias = PLANTAS.some((p) => (proyecto.plantas[p.id] ?? []).length > 0);
   const [pdfEstado, setPdfEstado] = useState('');
   const inputPdf = useRef<HTMLInputElement>(null);
 
@@ -97,6 +103,39 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
     setDiseno(null);
   };
 
+  const amueblar = async () => {
+    setError('');
+    setRespuesta('');
+    setPropuestas([]);
+    setDiseno(null);
+    setMobiliario(null);
+    if (!apiKey) {
+      setAjustes(true);
+      setError('Introduce tu clave de API de Anthropic para amueblar.');
+      return;
+    }
+    if (!hayEstancias) {
+      setError('Primero necesitas estancias en el boceto (dibújalas o genera una casa).');
+      return;
+    }
+    setAmueblando(true);
+    try {
+      const contexto = resumenProyecto(proyecto, normativa, evaluar(proyecto, normativa));
+      const m = await generarMobiliario({ apiKey, contexto, deseo });
+      setMobiliario(m);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAmueblando(false);
+    }
+  };
+
+  const aplicarMobiliario = () => {
+    if (!mobiliario) return;
+    aplicarMuebles(mobiliario.muebles);
+    setMobiliario(null);
+  };
+
   const interpretarPdf = async (fichero: File) => {
     setError('');
     setPdfEstado('');
@@ -158,13 +197,39 @@ export function Asistente({ normativa }: { normativa: NormativaMunicipal }) {
         <button className="btn-primario" onClick={preguntar} disabled={cargando || generando}>
           {cargando ? 'Pensando…' : '✨ Sugerir ideas'}
         </button>
-        <button className="btn-primario" onClick={generarCasa} disabled={cargando || generando}>
+        <button className="btn-primario" onClick={generarCasa} disabled={cargando || generando || amueblando}>
           {generando ? 'Diseñando…' : '🏠 Generar casa completa'}
+        </button>
+        <button
+          className="btn-primario"
+          onClick={amueblar}
+          disabled={cargando || generando || amueblando || !hayEstancias}
+          title={hayEstancias ? 'Amuebla las estancias con IA' : 'Necesitas estancias en el boceto'}
+        >
+          {amueblando ? 'Amueblando…' : '🛋️ Amueblar con IA'}
         </button>
         <button className="enlace" onClick={() => setAjustes((v) => !v)}>
           ⚙️ Clave API
         </button>
       </div>
+
+      {mobiliario && (
+        <div className="asistente-diseno">
+          {mobiliario.texto && <div className="asistente-respuesta">{mobiliario.texto}</div>}
+          <p className="asistente-nota">
+            <strong>{mobiliario.muebles.length} muebles</strong> propuestos. Se ven en la
+            vista 3D y el paseo interior.
+          </p>
+          <div className="asistente-acciones">
+            <button className="btn-primario" onClick={aplicarMobiliario}>
+              ✅ Amueblar la casa
+            </button>
+            <button className="enlace" onClick={() => setMobiliario(null)}>
+              Descartar
+            </button>
+          </div>
+        </div>
+      )}
 
       {diseno && (
         <div className="asistente-diseno">
